@@ -232,50 +232,44 @@ namespace AA.DIDApi.Controllers
 
         #region Acuant
 
-        [EnableCors("DidCorsPolicy")]
         [HttpPost("acuant/accepted")]
-        public async Task<ActionResult> PostResponseAcuantAccepted()
+        public async Task<ActionResult> PostAcuantAcceptedAsync()
         {
             string body = await GetRequestBodyAsync();
-            return BasePostResponseAcuant(body, "accepted");
+            return BaseAcuantRedirectHandler(body, "accepted");
         }
 
-        [EnableCors("DidCorsPolicy")]
-        [HttpPost("acuant/manual")]
-        public async Task<ActionResult> PostResponseAcuantManual()
+        [HttpGet("acuant/manual")]
+        public ActionResult GetAcuantManual([FromQuery] string response)
         {
-            string body = await GetRequestBodyAsync();
-            return BasePostResponseAcuant(body, "manual");
+            return BaseAcuantRedirectHandler(response, "manual");
         }
 
-        [EnableCors("DidCorsPolicy")]
         [HttpPost("acuant/denied")]
-        public async Task<ActionResult> PostResponseAcuantDenied()
+        public async Task<ActionResult> PostAcuantDeniedAsync()
         {
             string body = await GetRequestBodyAsync();
-            return BasePostResponseAcuant(body, "denied");
+            return BaseAcuantRedirectHandler(body, "denied");
         }
 
-        [EnableCors("DidCorsPolicy")]
         [HttpPost("acuant/repeated")]
-        public async Task<ActionResult> PostResponseAcuantRepeated()
+        public async Task<ActionResult> PostAcuantRepeatedAsync()
         {
             string body = await GetRequestBodyAsync();
-            return BasePostResponseAcuant(body, "repeated");
+            return BaseAcuantRedirectHandler(body, "repeated");
         }
 
-        [EnableCors("DidCorsPolicy")]
         [HttpPost("acuant/webhook")]
-        public async Task<ActionResult> PostResponseAcuantWebhook()
+        public async Task<ActionResult> PostAcuantWebhookAsync()
         {
             string body = await GetRequestBodyAsync();
-            return BasePostResponseAcuant(body, "webhook");
+            return BaseAcuantRedirectHandler(body, "webhook");
         }
 
-        private ActionResult BasePostResponseAcuant(string body, string redirectLocation)
+        private ActionResult BaseAcuantRedirectHandler(string body, string redirectLocation)
         {
             Logger.LogInformation($"{DateTime.UtcNow:o} -> {redirectLocation} -> {Request.Method} {Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}: {body}");
-            return Redirect($"https://ccusdidpoc-vcapi.azurewebsites.net/acuant/{redirectLocation}.html");
+            return Redirect("https://ccusdidpoc-vcapi.azurewebsites.net/acuant/" + redirectLocation + ".html");
         }
 
         #endregion Acuant
