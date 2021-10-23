@@ -11,7 +11,6 @@
         <div id="wrap">
             <center><h3>DotNet Client API VC Version</h3></center>
             <div style="text-align: center;">
-                <img id="vcLogo" src="api/issuer/logo.png" height=200px; />
                 <h1 id="vcType">NinjaCredential Verification</h1>
                 <h3 id="vcDescription"></h3>
                 <div id="message-wrapper" class="margin-bottom-75 margin-top-75" style="display: none">
@@ -20,24 +19,6 @@
                 </div>
 
                 <h1>Repeated</h1>
-
-                <script>
-                    fetch('api/issuer/echo')
-                        .then(response => response.text())
-                        .catch(error => document.getElementById("message").innerHTML = error)
-                        .then(response => {
-                            if (response.length > 0) {
-                                var data = JSON.parse(response);
-                                document.getElementById('vcType').innerText = data.credentialType + " Verifiable Credentials";
-                                document.getElementById('vcDescription').innerText = data.displayCard.description;
-                                document.body.style.backgroundColor = data.displayCard.backgroundColor;
-                                document.body.style.color = data.displayCard.textColor;
-                                document.getElementById('idIssue').style.backgroundColor = data.buttonColor;
-                                document.getElementById('idVerify').style.backgroundColor = data.buttonColor;
-                                document.title = data.credentialType + ' Verifiable Credentials';
-                            }
-                        });
-                </script>
             </div>
             <footer>
                 <p class="text-center text-gray tiny-text margin-top-75">
