@@ -11,6 +11,8 @@ namespace AA.DIDApi
 {
     public class Startup
     {
+        public static string DidCorsPolicy = "DidCorsPolicy";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -23,11 +25,11 @@ namespace AA.DIDApi
         {
             services.AddControllersWithViews();
 
-            services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
+            services.AddCors(o => o.AddPolicy(name: DidCorsPolicy, builder =>
             {
                 builder.AllowAnyOrigin()
-                       .AllowAnyMethod()
-                       .AllowAnyHeader();
+                       .AllowAnyHeader()
+                       .AllowAnyMethod();
             }));
 
             services.Configure<AppSettingsModel>(Configuration.GetSection("AppSettings"));
@@ -66,7 +68,7 @@ namespace AA.DIDApi
             }
             app.UseDefaultFiles();
             app.UseStaticFiles();
-            app.UseCors("MyPolicy");
+            app.UseCors(DidCorsPolicy);
             app.UseRouting();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>

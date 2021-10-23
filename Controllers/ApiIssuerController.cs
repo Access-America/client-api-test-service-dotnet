@@ -1,4 +1,5 @@
 ﻿using AA.DIDApi.Models;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -231,6 +232,7 @@ namespace AA.DIDApi.Controllers
 
         #region Acuant
 
+        [EnableCors("DidCorsPolicy")]
         [HttpPost("acuant/accepted")]
         public async Task<ActionResult> PostResponseAcuantAccepted()
         {
@@ -238,6 +240,7 @@ namespace AA.DIDApi.Controllers
             return BasePostResponseAcuant(body, "accepted");
         }
 
+        [EnableCors("DidCorsPolicy")]
         [HttpPost("acuant/manual")]
         public async Task<ActionResult> PostResponseAcuantManual()
         {
@@ -245,6 +248,7 @@ namespace AA.DIDApi.Controllers
             return BasePostResponseAcuant(body, "manual");
         }
 
+        [EnableCors("DidCorsPolicy")]
         [HttpPost("acuant/denied")]
         public async Task<ActionResult> PostResponseAcuantDenied()
         {
@@ -252,6 +256,7 @@ namespace AA.DIDApi.Controllers
             return BasePostResponseAcuant(body, "denied");
         }
 
+        [EnableCors("DidCorsPolicy")]
         [HttpPost("acuant/repeated")]
         public async Task<ActionResult> PostResponseAcuantRepeated()
         {
@@ -259,6 +264,7 @@ namespace AA.DIDApi.Controllers
             return BasePostResponseAcuant(body, "repeated");
         }
 
+        [EnableCors("DidCorsPolicy")]
         [HttpPost("acuant/webhook")]
         public async Task<ActionResult> PostResponseAcuantWebhook()
         {
