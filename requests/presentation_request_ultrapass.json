@@ -1,0 +1,26 @@
+{
+  "authority": "did:ion:EiDgqLzzpI6q8I0wsUq_F4VdGtv5HBMhr5U0DHArkO7Jxg:eyJkZWx0YSI6eyJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljS2V5cyI6W3siaWQiOiJzaWdfMmE4YWI4MWMiLCJwdWJsaWNLZXlKd2siOnsiY3J2Ijoic2VjcDI1NmsxIiwia3R5IjoiRUMiLCJ4IjoiRGI0bjlRR0Q0ODRrUXhGOXhiLUc2TDZ0OFlEY2FPLWdKVWNzdUhxNUpGRSIsInkiOiJPekx2NWtvaU9ldzZudnlvOVphSEhXOVc4a1NBNGRKbE5NQ0d1cjVKdXJBIn0sInB1cnBvc2VzIjpbImF1dGhlbnRpY2F0aW9uIiwiYXNzZXJ0aW9uTWV0aG9kIl0sInR5cGUiOiJFY2RzYVNlY3AyNTZrMVZlcmlmaWNhdGlvbktleTIwMTkifV0sInNlcnZpY2VzIjpbeyJpZCI6ImxpbmtlZGRvbWFpbnMiLCJzZXJ2aWNlRW5kcG9pbnQiOnsib3JpZ2lucyI6WyJodHRwczovL3VsdHJhcGFzc2lkLmNvbS8iXX0sInR5cGUiOiJMaW5rZWREb21haW5zIn0seyJpZCI6Imh1YiIsInNlcnZpY2VFbmRwb2ludCI6eyJpbnN0YW5jZXMiOlsiaHR0cHM6Ly9iZXRhLmh1Yi5tc2lkZW50aXR5LmNvbS92MS4wL2I3ZTEwNTRiLWQxNjYtNDAxOC1hYjg2LTUxN2YzNWU3MjA3ZSJdfSwidHlwZSI6IklkZW50aXR5SHViIn1dfX1dLCJ1cGRhdGVDb21taXRtZW50IjoiRWlEd2QtVUFvc3FhMzlNTU42UEdfQjFWOEpuQW1xS1N0SkpEWkVRdFk5bEU5dyJ9LCJzdWZmaXhEYXRhIjp7ImRlbHRhSGFzaCI6IkVpRHpvQmluYVlDblRtb1c4ZkFhWmtsS3cyQ0FhdXVhV21pMGo2YTBRSnhTT3ciLCJyZWNvdmVyeUNvbW1pdG1lbnQiOiJFaUFKeEhxVnRWVEk0Tkt3b241SndpZXB0dEtBQm1rZTBXY1FBM21rUWlHYU9BIn19",
+  "includeQRCode": false,
+  "registration": {
+    "clientName": "...set at runtime..."
+  },
+  "callback": {
+    "url": "...set at runtime...",
+    "nonce": "...set at runtime...",
+    "state": "...set at runtime...",
+    "headers": {
+      "my-api-key": "blabla"
+    }
+  },
+  "presentation": {
+    "includeReceipt": true,
+    "requestedCredentials": [
+      {
+        "type": "UltrapassTest",
+        "manifest": "https://beta.did.msidentity.com/v1.0/b7e1054b-d166-4018-ab86-517f35e7207e/verifiableCredential/contracts/UltrapassTest",
+        "purpose": "the purpose why the verifier asks for a VC",
+        "trustedIssuers": [ "did-of-the-Issuer-trusted" ]
+      }
+    ]
+  }
+}
