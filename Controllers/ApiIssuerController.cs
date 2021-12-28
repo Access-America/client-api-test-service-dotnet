@@ -19,7 +19,7 @@ namespace AA.DIDApi.Controllers
     [ApiController]
     public class ApiIssuerController : ApiBaseVCController
     {
-        private const string IssuanceRequestConfigFile = "issuance_request_accessamerica.json";
+        private const string IssuanceRequestConfigFile = "issuance_request_ultrapass.json";
 
         public ApiIssuerController(
             IConfiguration configuration,
@@ -269,7 +269,7 @@ namespace AA.DIDApi.Controllers
         private ActionResult BaseAcuantRedirectHandler(string body, string redirectLocation)
         {
             Logger.LogInformation($"{DateTime.UtcNow:o} -> {redirectLocation} -> {Request.Method} {Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}: {body}");
-            return Redirect("https://ccusdidpoc-vcapi.azurewebsites.net/acuant/" + redirectLocation + ".html");
+            return Redirect("https://upid-vcapi.azurewebsites.net/acuant/" + redirectLocation + ".html");
         }
 
         #endregion Acuant
