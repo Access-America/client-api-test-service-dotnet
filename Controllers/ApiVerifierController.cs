@@ -17,7 +17,7 @@ namespace AA.DIDApi.Controllers
     [ApiController]
     public class ApiVerifierController : ApiBaseVCController
     {
-        protected const string PresentationRequestConfigFile = "presentation_request_accessamerica.json";
+        protected const string PresentationRequestConfigFile = "presentation_request_ultrapass.json";
 
         public ApiVerifierController(
             IConfiguration configuration,
