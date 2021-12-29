@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 
 namespace AA.DIDApi.Controllers
 {
@@ -226,6 +225,7 @@ namespace AA.DIDApi.Controllers
         }
 
         #endregion Endpoints
+
         #region Acuant
 
         [HttpPost("acuant/accepted")]

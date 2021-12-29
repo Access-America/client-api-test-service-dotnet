@@ -2,12 +2,22 @@
 
 namespace AA.DIDApi.Models
 {
-    //public class HttpActionResponse
-    //{
-    //    public HttpStatusCode StatusCode { get; set; }
+    /// <summary>
+    /// TODO: this model can be used in refactoring BasController responses
+    /// </summary>
+    public class HttpActionResponse
+    {
+        //public HttpActionResponse(HttpStatusCode statusCode, bool isSuccessStatusCode = false, string responseContent = null)
+        //{
+        //    StatusCode = statusCode;
+        //    IsSuccessStatusCode = isSuccessStatusCode;
+        //    ResponseContent = responseContent;
+        //}
 
-    //    public bool IsSuccessStatusCode { get; set; }
+        //public HttpStatusCode StatusCode { get; set; }
 
-    //    public string ResponseContent { get; set; }
-    //}
+        //public bool IsSuccessStatusCode { get; set; }
+
+        //public string ResponseContent { get; set; }
+    }
 }
