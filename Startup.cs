@@ -11,8 +11,6 @@ namespace AA.DIDApi
 {
     public class Startup
     {
-        public static string DidCorsPolicy = "DidCorsPolicy";
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -25,15 +23,15 @@ namespace AA.DIDApi
         {
             services.AddControllersWithViews();
 
-            services.AddCors(o => o.AddPolicy(name: DidCorsPolicy, builder =>
+            services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
             {
                 builder.AllowAnyOrigin()
-                       .AllowAnyHeader()
-                       .AllowAnyMethod();
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
             }));
 
             services.Configure<AppSettingsModel>(Configuration.GetSection("AppSettings"));
-            
+
             // If using Kestrel:
             services.Configure<KestrelServerOptions>(options =>
             {
@@ -50,9 +48,7 @@ namespace AA.DIDApi
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            Console.WriteLine($"IssuanceRequestConfigFile={Environment.GetEnvironmentVariable("IssuanceRequestConfigFile")}\n" +
-                $"PresentationRequestConfigFile={Environment.GetEnvironmentVariable("PresentationRequestConfigFile")}");
-            if(env.IsDevelopment())
+            if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
@@ -68,13 +64,15 @@ namespace AA.DIDApi
             }
             app.UseDefaultFiles();
             app.UseStaticFiles();
-            app.UseCors(DidCorsPolicy);
+            app.UseCors("MyPolicy");
             app.UseRouting();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapDefaultControllerRoute();
             });
+
+            Environment.SetEnvironmentVariable("INMEM-API-KEY", Guid.NewGuid().ToString());
         }
     }
 }

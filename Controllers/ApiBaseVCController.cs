@@ -6,12 +6,12 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Microsoft.Identity.Client;
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,25 +19,32 @@ namespace AA.DIDApi.Controllers
 {
     public abstract class ApiBaseVCController : ControllerBase
     {
-        protected IMemoryCache _cache;
-        protected readonly IWebHostEnvironment _env;
+        protected IMemoryCache Cache;
+        protected readonly IWebHostEnvironment Environment;
         protected readonly AppSettingsModel AppSettings;
-        protected readonly IConfiguration _configuration;
-        protected readonly ILogger Logger;
+        protected readonly IConfiguration Configuration;
+        protected readonly ILogger<ApiBaseVCController> Logger;
+        private string _apiEndpoint;
+        private string _authority;
+        public string _apiKey;
 
         public ApiBaseVCController(
             IConfiguration configuration,
             IOptions<AppSettingsModel> appSettings,
             IMemoryCache memoryCache,
             IWebHostEnvironment env,
-            ILogger logger)
+            ILogger<ApiBaseVCController> log)
         {
-            this.AppSettings = appSettings.Value;
-            _cache = memoryCache;
-            _env = env;
-            _configuration = configuration;
+            AppSettings = appSettings.Value;
+            Cache = memoryCache;
+            Environment = env;
+            Configuration = configuration;
+            Logger = log;
 
-            Logger = logger;
+            _apiEndpoint = string.Format(AppSettings.ApiEndpoint, AppSettings.TenantId);
+            _authority = string.Format(AppSettings.Authority, AppSettings.TenantId);
+
+            _apiKey = System.Environment.GetEnvironmentVariable("INMEM-API-KEY");
         }
 
         protected string GetRequestHostName()
@@ -53,10 +60,10 @@ namespace AA.DIDApi.Controllers
         // return 400 error-message
         protected ActionResult ReturnErrorMessage(string errorMessage)
         {
-            return BadRequest(new 
+            return BadRequest(new
                 {
-                    error = "400", 
-                    error_description = errorMessage 
+                    error = "400",
+                    error_description = errorMessage
                 });
         }
 
@@ -66,59 +73,59 @@ namespace AA.DIDApi.Controllers
             return new ContentResult { ContentType = "application/json", Content = json };
         }
 
-        protected ActionResult ReturnErrorB2C(string message)
+        protected async Task<(string, string)> GetAccessToken()
         {
-            var msg = new 
-            {
-                version = "1.0.0",
-                status = 400,
-                userMessage = message
-            };
-            return new ContentResult { StatusCode = 409, ContentType = "application/json", Content = JsonConvert.SerializeObject(msg) };
-        }
+            IConfidentialClientApplication app =
+                ConfidentialClientApplicationBuilder
+                    .Create(AppSettings.ClientId)
+                    .WithClientSecret(AppSettings.ClientSecret)
+                    .WithAuthority(new Uri(_authority))
+                    .Build();
 
-        // POST to VC Client API
-        protected async Task<HttpActionResponse> HttpPostAsync(string body)
-        {
+            string[] scopes = new string[] { AppSettings.scope };
+            AuthenticationResult result;
+
             try
             {
-                Logger.LogInformation($"POST request initializing\n{body}");
-
-                using HttpClient client = new HttpClient();
-                using HttpResponseMessage res = await client.PostAsync(this.AppSettings.ApiEndpoint, new StringContent(body, Encoding.UTF8, "application/json"));
-                string response = res.Content.ReadAsStringAsync().Result;
-
-                return new HttpActionResponse
-                {
-                    StatusCode = res.StatusCode,
-                    IsSuccessStatusCode = res.IsSuccessStatusCode,
-                    ResponseContent = response
-                };
+                result = await app.AcquireTokenForClient(scopes).ExecuteAsync();
             }
             catch (Exception ex)
             {
-                return new HttpActionResponse
-                {
-                    StatusCode = HttpStatusCode.GatewayTimeout,
-                    IsSuccessStatusCode = false,
-                    ResponseContent = ex.Message
-                };
+                return (string.Empty, ex.Message);
             }
+
+            Logger.LogTrace(result.AccessToken);
+            return (result.AccessToken, string.Empty);
         }
 
-        // GET
-        protected async Task<HttpActionResponse> HttpGetAsync(string url)
+        // POST to VC Client API
+        protected bool HttpPost(string body, out HttpStatusCode statusCode, out string response)
+        {
+            response = null;
+            var accessToken = GetAccessToken().Result;
+            if (accessToken.Item1 == string.Empty)
+            {
+                statusCode = HttpStatusCode.Unauthorized;
+                response = accessToken.Item2;
+                return false;
+            }
+
+            using HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Item1);
+            using HttpResponseMessage res = client.PostAsync(_apiEndpoint, new StringContent(body, Encoding.UTF8, "application/json")).Result;
+            response = res.Content.ReadAsStringAsync().Result;
+
+            statusCode = res.StatusCode;
+            return res.IsSuccessStatusCode;
+        }
+
+        protected bool HttpGet(string url, out HttpStatusCode statusCode, out string response)
         {
             using HttpClient client = new HttpClient();
-            using HttpResponseMessage res = await client.GetAsync(url);
-            string response = await res.Content.ReadAsStringAsync();
-
-            return new HttpActionResponse
-            {
-                StatusCode = res.StatusCode,
-                IsSuccessStatusCode = res.IsSuccessStatusCode,
-                ResponseContent = response
-            };
+            using HttpResponseMessage res = client.GetAsync(url).Result;
+            response = res.Content.ReadAsStringAsync().Result;
+            statusCode = res.StatusCode;
+            return res.IsSuccessStatusCode;
         }
 
         protected void TraceHttpRequest()
@@ -128,55 +135,45 @@ namespace AA.DIDApi.Controllers
                 ? xForwardedFor
                 : HttpContext.Connection.RemoteIpAddress.ToString();
 
-            Logger.LogInformation($"{DateTime.UtcNow:o} {ipaddr} -> {Request.Method} {Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}");
+            Logger.LogTrace($"{DateTime.UtcNow:o} {ipaddr} -> {Request.Method} {Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}");
         }
 
-        protected async Task<string> GetRequestBodyAsync()
+        protected string GetRequestBody()
         {
             using StreamReader reader = new StreamReader(Request.Body);
-            return await reader.ReadToEndAsync();
+            return reader.ReadToEndAsync().Result;
         }
 
-        protected JObject JWTTokenToJObject(string token)
+        protected bool GetCachedObject<T>(string key, out T Object)
         {
-            string[] parts = token.Split(".");
-            parts[1] = parts[1].PadRight(4 * ((parts[1].Length + 3) / 4), '=');
+            Object = default;
+            bool rc;
+            if (rc = Cache.TryGetValue(key, out object val))
+            {
+                Object = (T)Convert.ChangeType(val, typeof(T));
+            }
 
-            return JObject.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(parts[1])));
+            return rc;
         }
 
         protected bool GetCachedValue(string key, out string value)
         {
-            return _cache.TryGetValue(key, out value);
+            return Cache.TryGetValue(key, out value);
         }
 
-        protected bool GetCachedJsonObject(string key, out JObject value)
+        protected void CacheObjectWithExpiration(string key, object Object)
         {
-            value = null;
-            if (!_cache.TryGetValue(key, out string buf))
-            {
-                return false;
-            } 
-            else 
-            {
-                value = JObject.Parse(buf);
-                return true;
-            }
-        }
-
-        protected void CacheJsonObjectWithExpiration(string key, object jsonObject)
-        {
-            _cache.Set(key, JsonConvert.SerializeObject(jsonObject), DateTimeOffset.Now.AddSeconds(this.AppSettings.CacheExpiresInSeconds));
+            Cache.Set(key, Object, DateTimeOffset.Now.AddSeconds(AppSettings.CacheExpiresInSeconds));
         }
 
         protected void CacheValueWithNoExpiration(string key, string value)
         {
-            _cache.Set(key, value);
+            Cache.Set(key, value);
         }
 
         protected void RemoveCacheValue(string key)
         {
-            _cache.Remove(key);
+            Cache.Remove(key);
         }
     }
 }

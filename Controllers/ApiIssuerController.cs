@@ -1,5 +1,4 @@
 ﻿using AA.DIDApi.Models;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -9,7 +8,8 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
@@ -19,47 +19,43 @@ namespace AA.DIDApi.Controllers
     [ApiController]
     public class ApiIssuerController : ApiBaseVCController
     {
-        private const string IssuanceRequestConfigFile = "issuance_request_ultrapass.json";
+        //private const string IssuanceRequestConfigFile = "%cd%\\requests\\issuance_request_config_v2.json";
 
         public ApiIssuerController(
             IConfiguration configuration,
             IOptions<AppSettingsModel> appSettings,
             IMemoryCache memoryCache,
             IWebHostEnvironment env,
-            ILoggerFactory loggerFactory) 
-                : base(configuration, appSettings, memoryCache, env, loggerFactory.CreateLogger("IssuerLogger"))
+            ILogger<ApiIssuerController> log) : base(configuration, appSettings, memoryCache, env, log)
         {
-            GetIssuanceRequest().GetAwaiter().GetResult();
+            GetIssuanceManifest();
         }
 
         #region Endpoints
 
         [HttpGet("echo")]
-        public async Task<ActionResult> Echo()
+        public ActionResult Echo()
         {
             TraceHttpRequest();
-         
-            try 
+            try
             {
-                Logger.LogInformation("GetIssuanceRequest()");
-                JObject config = await GetIssuanceRequest();
-
                 JObject manifest = GetIssuanceManifest();
+                Dictionary<string, string> claims = GetSelfAssertedClaims(manifest);
                 var info = new
                 {
                     date = DateTime.Now.ToString(),
                     host = GetRequestHostName(),
                     api = GetApiPath(),
-                    didIssuer = manifest["input"]["issuer"], 
-                    credentialType = manifest["id"], 
+                    didIssuer = manifest["input"]["issuer"],
+                    credentialType = manifest["id"],
                     displayCard = manifest["display"]["card"],
                     buttonColor = "#000080",
                     contract = manifest["display"]["contract"],
-                    selfAssertedClaims = config["issuance"]["claims"]
+                    selfAssertedClaims = claims
                 };
-            
+
                 return ReturnJson(JsonConvert.SerializeObject(info));
-            } 
+            }
             catch (Exception ex)
             {
                 return ReturnErrorMessage(ex.Message);
@@ -68,160 +64,161 @@ namespace AA.DIDApi.Controllers
 
         [HttpGet]
         [Route("logo.png")]
-        public ActionResult GetLogo()
+        public ActionResult Logo()
         {
             TraceHttpRequest();
-
             JObject manifest = GetIssuanceManifest();
             return Redirect(manifest["display"]["card"]["logo"]["uri"].ToString());
         }
 
         [HttpGet("issue-request")]
-        public async Task<ActionResult> GetIssuanceReference()
+        public ActionResult GetIssuanceReference()
         {
             TraceHttpRequest();
-
-            try 
+            try
             {
-                JObject issuanceRequest = await GetIssuanceRequest();
-                if (issuanceRequest == null) 
-                {
-                    return ReturnErrorMessage("Issuance Request Config File not found");
-                }
-                
-                // set self-asserted claims passed as query string parameters
-                if (((JObject)issuanceRequest["issuance"]).ContainsKey("claims"))
-                {
-                    foreach (var c in (JObject)issuanceRequest["issuance"]["claims"]) 
-                    {
-                        issuanceRequest["issuance"]["claims"][c.Key] = this.Request.Query[c.Key].ToString();
-                    }
-                }
-
                 string correlationId = Guid.NewGuid().ToString();
-                issuanceRequest["callback"]["url"] = $"{GetApiPath()}/issuanceCallback";
-                issuanceRequest["callback"]["state"] = correlationId;
-                issuanceRequest["callback"]["nonce"] = Guid.NewGuid().ToString();
-                issuanceRequest["callback"]["headers"]["my-api-key"] = this.AppSettings.ApiKey;
-                string pin = null;
-
-                int pinLength = 0;
-                if (((JObject)issuanceRequest["issuance"]).ContainsKey("pin"))
+                VCIssuanceRequest request = new VCIssuanceRequest()
                 {
-                    int.TryParse(issuanceRequest["issuance"]["pin"]["length"].ToString(), out pinLength);
-                    if (pinLength > 0)
+                    includeQRCode = false,
+                    authority = AppSettings.VerifierAuthority,
+                    registration = new Registration()
                     {
-                        int pinMaxValue = int.Parse("".PadRight(pinLength, '9'));          // 9999999
-                        int randomNumber = RandomNumberGenerator.GetInt32(1, pinMaxValue);
-                        pin = string.Format("{0:D" + pinLength.ToString() + "}", randomNumber);
-                        Logger.LogInformation($"pin={pin}");
-                        issuanceRequest["issuance"]["pin"]["value"] = pin;
+                        clientName = AppSettings.client_name
+                    },
+                    callback = new Callback()
+                    {
+                        url = $"{GetApiPath()}/issue-callback",
+                        state = correlationId,
+                        headers = new Dictionary<string, string>() { { "api-key", _apiKey } }
+                    },
+                    issuance = new Issuance()
+                    {
+                        type = AppSettings.CredentialType,
+                        manifest = AppSettings.DidManifest,
+                        pin = null
+                    }
+                };
+
+                // if pincode is required, set it up in the request
+                if (AppSettings.IssuancePinCodeLength > 0)
+                {
+                    int pinCode = RandomNumberGenerator.GetInt32(1, int.Parse("".PadRight(AppSettings.IssuancePinCodeLength, '9')));
+                    Logger.LogTrace("pin={0}", pinCode);
+                    request.issuance.pin = new Pin()
+                    {
+                        length = AppSettings.IssuancePinCodeLength,
+                        value = string.Format("{0:D" + AppSettings.IssuancePinCodeLength.ToString() + "}", pinCode)
+                    };
+                }
+
+                // set self-asserted claims passed as query string parameters
+                // This sample assumes that ALL claims comes from the UX
+                JObject manifest = GetIssuanceManifest();
+                Dictionary<string, string> claims = GetSelfAssertedClaims(manifest);
+                if (claims.Count > 0)
+                {
+                    request.issuance.claims = new Dictionary<string, string>();
+                    foreach (KeyValuePair<string, string> kvp in claims)
+                    {
+                        request.issuance.claims.Add(kvp.Key, Request.Query[kvp.Key].ToString());
                     }
                 }
 
-                string jsonString = JsonConvert.SerializeObject(issuanceRequest);
-                HttpActionResponse httpPostResponse = await HttpPostAsync(jsonString);
-                if (!httpPostResponse.IsSuccessStatusCode)
+                string jsonString = JsonConvert.SerializeObject(request, Formatting.None,
+                    new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
+                Logger.LogTrace($"VC Client API Request\n{jsonString}");
+
+                string contents = "";
+                HttpStatusCode statusCode = HttpStatusCode.OK;
+                if (!HttpPost(jsonString, out statusCode, out contents))
                 {
-                    Logger.LogError($"VC Client API Error Response\n{httpPostResponse.ResponseContent}\n{httpPostResponse.StatusCode}");
-                    return ReturnErrorMessage(httpPostResponse.ResponseContent);
+                    Logger.LogError($"VC Client API Error Response\n{contents}");
+                    return ReturnErrorMessage(contents);
                 }
-                
-                JObject requestConfig = JObject.Parse(httpPostResponse.ResponseContent);
-                if(pinLength > 0)
+
+                // add the id and the pin to the response we give the browser since they need them
+                JObject requestConfig = JObject.Parse(contents);
+                if (AppSettings.IssuancePinCodeLength > 0)
                 {
-                    requestConfig["pin"] = pin;
+                    requestConfig["pin"] = request.issuance.pin.value;
                 }
 
                 requestConfig.Add(new JProperty("id", correlationId));
                 jsonString = JsonConvert.SerializeObject(requestConfig);
-                Logger.LogInformation($"VC Client API Response\n{jsonString}");
-            
+                Logger.LogTrace($"VC Client API Response\n{jsonString}");
                 return ReturnJson(jsonString);
-            }  
+            }
             catch (Exception ex)
             {
                 return ReturnErrorMessage(ex.Message);
             }
         }
 
-        [HttpPost("issuanceCallback")]
-        public async Task<ActionResult> PostIssuanceCallback()
+        [HttpPost("issue-callback")]
+        public ActionResult IssuanceCallbackModel()
         {
             TraceHttpRequest();
-
-            try 
+            try
             {
-                Logger.LogInformation("issuanceCallback");
-                string body = await GetRequestBodyAsync();
-                Logger.LogInformation(body);
-                JObject issuanceResponse = JObject.Parse(body);
-            
-                if (issuanceResponse["code"].ToString() == "request_retrieved")
+                string body = GetRequestBody();
+                Logger.LogTrace(body);
+                Request.Headers.TryGetValue("api-key", out var apiKey);
+                if (_apiKey != apiKey)
                 {
-                    string correlationId = issuanceResponse["state"].ToString();
-                    var cacheData = new 
+                    return new ContentResult()
                     {
-                        status = 1,
-                        message = "QR Code is scanned. Waiting for issuance to complete."
+                        StatusCode = (int)HttpStatusCode.Unauthorized,
+                        Content = "api-key wrong or missing"
                     };
-                    CacheJsonObjectWithExpiration(correlationId, cacheData);
                 }
 
+                VCCallbackEvent callback = JsonConvert.DeserializeObject<VCCallbackEvent>(body);
+                CacheObjectWithExpiration(callback.state, callback);
                 return new OkResult();
-            } 
+            }
             catch (Exception ex)
-            {
-                return ReturnErrorMessage(ex.Message);
-            }
-        }
-
-        [HttpPost("response")]
-        public async Task<ActionResult> PostResponse()
-        {
-            TraceHttpRequest();
-
-            try 
-            {
-                Logger.LogInformation("response");
-                string body = await GetRequestBodyAsync();
-                JObject claims = JObject.Parse(body);
-                CacheJsonObjectWithExpiration(claims["state"].ToString(), claims);
-                return new OkResult();
-            }
-            catch(Exception ex) 
             {
                 return ReturnErrorMessage(ex.Message);
             }
         }
 
         [HttpGet("issue-response")]
-        public ActionResult GetIssuanceResponse()
+        public ActionResult IssuanceResponseModel()
         {
             TraceHttpRequest();
-
-            try 
+            try
             {
-                Logger.LogInformation($"[api/issuer/issue-response] Request.Query.Keys={Request.Query.Keys.Count}");
-                foreach (string key in Request.Query.Keys)
-                {
-                    Logger.LogInformation($"Key={key}, value={Request.Query[key]}");
-                }
-
-                if (!Request.Query.ContainsKey("id") || string.IsNullOrEmpty(Request.Query["id"]))
+                string correlationId = Request.Query["id"];
+                if (string.IsNullOrEmpty(correlationId))
                 {
                     return ReturnErrorMessage("Missing argument 'id'");
                 }
 
-                string correlationId = Request.Query["id"];
-                if(GetCachedValue(correlationId, out string body))
+                if (GetCachedObject<VCCallbackEvent>(correlationId, out VCCallbackEvent callback))
                 {
-                    RemoveCacheValue(correlationId);
-                    return ReturnJson(body);
-                }
+                    if (callback.code == "request_retrieved")
+                    {
+                        return ReturnJson(JsonConvert.SerializeObject(new { status = 1, message = "QR Code is scanned. Waiting for issuance to complete." }));
+                    }
 
+                    if (callback.code == "issuance_successful")
+                    {
+                        RemoveCacheValue(correlationId);
+                        return ReturnJson(JsonConvert.SerializeObject(new { status = 2, message = "Issuance process is completed" }));
+                    }
+
+                    if (callback.code == "issuance_failed")
+                    {
+                        RemoveCacheValue(correlationId);
+                        return ReturnJson(JsonConvert.SerializeObject(new { status = 99, message = "Issuance process failed with reason: " + callback.error.message }));
+                    }
+                }
                 return new OkResult();
-            } 
+            }
             catch (Exception ex)
             {
                 return ReturnErrorMessage(ex.Message);
@@ -229,13 +226,12 @@ namespace AA.DIDApi.Controllers
         }
 
         #endregion Endpoints
-
         #region Acuant
 
         [HttpPost("acuant/accepted")]
-        public async Task<ActionResult> PostAcuantAcceptedAsync()
+        public ActionResult PostAcuantAcceptedAsync()
         {
-            string body = await GetRequestBodyAsync();
+            string body = GetRequestBody();
             return BaseAcuantRedirectHandler(body, "accepted");
         }
 
@@ -246,23 +242,23 @@ namespace AA.DIDApi.Controllers
         }
 
         [HttpPost("acuant/denied")]
-        public async Task<ActionResult> PostAcuantDeniedAsync()
+        public ActionResult PostAcuantDeniedAsync()
         {
-            string body = await GetRequestBodyAsync();
+            string body = GetRequestBody();
             return BaseAcuantRedirectHandler(body, "denied");
         }
 
         [HttpPost("acuant/repeated")]
-        public async Task<ActionResult> PostAcuantRepeatedAsync()
+        public ActionResult PostAcuantRepeatedAsync()
         {
-            string body = await GetRequestBodyAsync();
+            string body = GetRequestBody();
             return BaseAcuantRedirectHandler(body, "repeated");
         }
 
         [HttpPost("acuant/webhook")]
-        public async Task<ActionResult> PostAcuantWebhookAsync()
+        public ActionResult PostAcuantWebhookAsync()
         {
-            string body = await GetRequestBodyAsync();
+            string body = GetRequestBody();
             return BaseAcuantRedirectHandler(body, "webhook");
         }
 
@@ -276,89 +272,43 @@ namespace AA.DIDApi.Controllers
 
         #region Helpers
 
-        protected string GetApiPath()
+        private string GetApiPath()
         {
             return $"{GetRequestHostName()}/api/issuer";
         }
 
-        protected async Task<JObject> GetIssuanceRequest()
-        {
-            if (GetCachedValue("issuanceRequest", out string json))
-            {
-                return JObject.Parse(json);
-            }
-
-            // see if file path was passed on command line
-            string issuanceRequestFile = IssuanceRequestConfigFile;// _configuration.GetValue<string>("IssuanceRequestConfigFile");
-            if (string.IsNullOrEmpty(issuanceRequestFile))
-            {
-                issuanceRequestFile = IssuanceRequestConfigFile;
-            }
-
-            string fileLocation = Directory.GetParent(typeof(Program).Assembly.Location).FullName;
-//             string file = $"{fileLocation}\\{issuanceRequestFile}";
-            string file = issuanceRequestFile.StartsWith("requests")
-                ? $"{fileLocation}\\{issuanceRequestFile}"
-                : $"{fileLocation}\\requests\\{issuanceRequestFile}";
-            if (!System.IO.File.Exists(file))
-            {
-                Logger.LogError($"File not found: {issuanceRequestFile}");
-                return null;
-            }
-
-            Logger.LogInformation($"IssuanceRequest file: {issuanceRequestFile}");
-            json = System.IO.File.ReadAllText(file);
-            JObject config = JObject.Parse(json);
-
-            // download manifest and cache it
-            HttpActionResponse httpGetResponse = await HttpGetAsync(config["issuance"]["manifest"].ToString());
-            if (!httpGetResponse.IsSuccessStatusCode)
-            {
-                Logger.LogError($"HttpStatus {httpGetResponse.StatusCode} fetching manifest {config["issuance"]["manifest"]}");
-                return null;
-            }
-
-            CacheValueWithNoExpiration("manifestIssuance", httpGetResponse.ResponseContent);
-            JObject manifest = JObject.Parse(httpGetResponse.ResponseContent);
-
-            // update presentationRequest from manifest with things that don't change for each request
-            if (!config["authority"].ToString().StartsWith("did:ion:"))
-            {
-                config["authority"] = manifest["input"]["issuer"];
-            }
-            if (config["issuance"]["type"].ToString().Length == 0)
-            {
-                config["issuance"]["type"] = manifest["id"];
-            }
-            config["registration"]["clientName"] = AppSettings.client_name;
-
-            // if we have pin code but length is zero, remove it since VC Client API will give error then
-            if (((JObject)config["issuance"]).ContainsKey("pin"))
-            {
-                if (int.TryParse(config["issuance"]["pin"]["length"].ToString(), out int pinLength))
-                {
-                    if (pinLength == 0)
-                    {
-                        (config["issuance"] as JObject).Remove("pin");
-                    }
-                }
-            }
-
-            json = JsonConvert.SerializeObject(config);
-            CacheValueWithNoExpiration("issuanceRequest", json);
-            return config;
-        }
-
-        protected JObject GetIssuanceManifest()
+        private JObject GetIssuanceManifest()
         {
             if (GetCachedValue("manifestIssuance", out string json))
             {
                 return JObject.Parse(json);
             }
 
-            return null;
+            // download manifest and cache it
+            if (!HttpGet(AppSettings.DidManifest, out HttpStatusCode statusCode, out string contents))
+            {
+                Logger.LogError($"HttpStatus {statusCode} fetching manifest {AppSettings.DidManifest}");
+                return null;
+            }
+
+            CacheValueWithNoExpiration("manifestIssuance", contents);
+            return JObject.Parse(contents);
         }
 
-        #endregion Endpoints
+        private Dictionary<string, string> GetSelfAssertedClaims(JObject manifest)
+        {
+            Dictionary<string, string> claims = new Dictionary<string, string>();
+            if (manifest["input"]["attestations"]["idTokens"][0]["id"].ToString() == "https://self-issued.me")
+            {
+                foreach (var claim in manifest["input"]["attestations"]["idTokens"][0]["claims"])
+                {
+                    claims.Add(claim["claim"].ToString(), "");
+                }
+            }
+
+            return claims;
+        }
+
+        #endregion Helpers
     }
 }
