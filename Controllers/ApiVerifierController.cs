@@ -189,10 +189,10 @@ namespace AA.DIDApi.Controllers
 
                     if (callback.code == "presentation_verified")
                     {
-                        string displayName =
-                            callback.issuers[0].claims.ContainsKey("displayName")
-                            ? callback.issuers[0].claims["displayName"]
-                            : $"{callback.issuers[0].claims["firstName"]} {callback.issuers[0].claims["lastName"]}";
+                        string displayName = "John Doe"
+//                             callback.issuers[0].claims.ContainsKey("displayName")
+//                             ? callback.issuers[0].claims["displayName"]
+//                             : $"{callback.issuers[0].claims["firstName"]} {callback.issuers[0].claims["lastName"]}";
 
                         var obj = new { status = 2, message = displayName };
                         JObject resp = JObject.Parse(JsonConvert.SerializeObject(new { status = 2, message = displayName }));
