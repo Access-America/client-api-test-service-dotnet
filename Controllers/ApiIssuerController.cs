@@ -39,7 +39,7 @@ namespace AA.DIDApi.Controllers
             try
             {
                 JObject manifest = GetIssuanceManifest();
-//                 Dictionary<string, string> claims = GetSelfAssertedClaims(manifest);
+                Dictionary<string, string> claims = GetSelfAssertedClaims(manifest);
                 var info = new
                 {
                     date = DateTime.Now.ToString(),
@@ -50,7 +50,7 @@ namespace AA.DIDApi.Controllers
                     displayCard = manifest["display"]["card"],
                     buttonColor = "#000080",
                     contract = manifest["display"]["contract"],
-//                     selfAssertedClaims = claims
+                    selfAssertedClaims = claims
                 };
 
                 return ReturnJson(JsonConvert.SerializeObject(info));
