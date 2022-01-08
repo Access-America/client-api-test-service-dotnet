@@ -189,7 +189,7 @@ namespace AA.DIDApi.Controllers
 
                     if (callback.code == "presentation_verified")
                     {
-                        string displayName = "John Doe"
+                        string displayName = "John Doe";
 //                             callback.issuers[0].claims.ContainsKey("displayName")
 //                             ? callback.issuers[0].claims["displayName"]
 //                             : $"{callback.issuers[0].claims["firstName"]} {callback.issuers[0].claims["lastName"]}";
