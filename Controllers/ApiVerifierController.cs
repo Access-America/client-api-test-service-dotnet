@@ -202,9 +202,9 @@ namespace AA.DIDApi.Controllers
                         string lastName = null;
                         if ((bool)(callback?.issuers[0]?.claims?.ContainsKey("lastName")))
                         {
-                            firstName = callback.issuers[0].claims["lastName"];
+                            lastName = callback.issuers[0].claims["lastName"];
                         }
-                        if (!string.IsNullOrEmpty(firstName) && !string.IsNullOrEmpty(lastName))
+                        if (!string.IsNullOrEmpty(firstName) || !string.IsNullOrEmpty(lastName))
                         {
                             displayName = $"{firstName} {lastName}";
                         }
