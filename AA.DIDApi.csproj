@@ -6,6 +6,7 @@
     <UserSecretsId>8fd0f01b-c238-475c-97dd-6638d6aa0463</UserSecretsId>
     <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
+    <ApplicationInsightsResourceId>/subscriptions/c9494ac0-6b12-4244-821d-c74d08eab67a/resourceGroups/rg-vcissuerverifier/providers/microsoft.insights/components/upid-vcapi</ApplicationInsightsResourceId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -51,6 +52,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.15.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.AzureAppServices" Version="6.0.0-preview.1.21103.6" />
     <PackageReference Include="Microsoft.Identity.Client" Version="4.39.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />

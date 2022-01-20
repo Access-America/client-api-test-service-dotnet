@@ -141,7 +141,10 @@ namespace AA.DIDApi.Controllers
         protected string GetRequestBody()
         {
             using StreamReader reader = new StreamReader(Request.Body);
-            return reader.ReadToEndAsync().Result;
+            var body = reader.ReadToEndAsync().Result.Replace("\r\n", string.Empty);
+            Logger.LogInformation(body);
+
+            return body;
         }
 
         protected bool GetCachedObject<T>(string key, out T Object)

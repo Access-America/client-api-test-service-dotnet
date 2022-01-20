@@ -43,6 +43,9 @@ namespace AA.DIDApi
             {
                 options.AllowSynchronousIO = true;
             });
+
+            // The following line enables Application Insights telemetry collection.
+            services.AddApplicationInsightsTelemetry(Configuration["APPINSIGHTS_CONNECTIONSTRING"]);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -164,7 +164,6 @@ namespace AA.DIDApi.Controllers
             try
             {
                 string body = GetRequestBody();
-                Logger.LogTrace(body);
                 Request.Headers.TryGetValue("api-key", out var apiKey);
                 if (_apiKey != apiKey)
                 {
