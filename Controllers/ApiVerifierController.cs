@@ -144,7 +144,7 @@ namespace AA.DIDApi.Controllers
 
             try
             {
-                string body = GetRequestBody();
+                string body = GetRequestBody("presentation-callback");
                 Request.Headers.TryGetValue("api-key", out var apiKey);
                 if (_apiKey != apiKey)
                 {
@@ -236,7 +236,7 @@ namespace AA.DIDApi.Controllers
 
             try
             {
-                string body = GetRequestBody();
+                string body = GetRequestBody("presentation-response-b2c");
                 JObject b2cRequest = JObject.Parse(body);
                 string correlationId = b2cRequest["id"].ToString();
 

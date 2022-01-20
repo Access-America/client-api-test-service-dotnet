@@ -163,7 +163,7 @@ namespace AA.DIDApi.Controllers
             TraceHttpRequest();
             try
             {
-                string body = GetRequestBody();
+                string body = GetRequestBody("issue-callback");
                 Request.Headers.TryGetValue("api-key", out var apiKey);
                 if (_apiKey != apiKey)
                 {
@@ -230,7 +230,7 @@ namespace AA.DIDApi.Controllers
         [HttpPost("acuant/accepted")]
         public ActionResult PostAcuantAcceptedAsync()
         {
-            string body = GetRequestBody();
+            string body = GetRequestBody("acuant/accepted");
             return BaseAcuantRedirectHandler(body, "accepted");
         }
 
@@ -243,21 +243,21 @@ namespace AA.DIDApi.Controllers
         [HttpPost("acuant/denied")]
         public ActionResult PostAcuantDeniedAsync()
         {
-            string body = GetRequestBody();
+            string body = GetRequestBody("acuant/denied");
             return BaseAcuantRedirectHandler(body, "denied");
         }
 
         [HttpPost("acuant/repeated")]
         public ActionResult PostAcuantRepeatedAsync()
         {
-            string body = GetRequestBody();
+            string body = GetRequestBody("acuant/repeated");
             return BaseAcuantRedirectHandler(body, "repeated");
         }
 
         [HttpPost("acuant/webhook")]
         public ActionResult PostAcuantWebhookAsync()
         {
-            string body = GetRequestBody();
+            string body = GetRequestBody("acuant/webhook");
             return BaseAcuantRedirectHandler(body, "webhook");
         }
 

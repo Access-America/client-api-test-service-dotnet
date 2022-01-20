@@ -138,11 +138,11 @@ namespace AA.DIDApi.Controllers
             Logger.LogTrace($"{DateTime.UtcNow:o} {ipaddr} -> {Request.Method} {Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}");
         }
 
-        protected string GetRequestBody()
+        protected string GetRequestBody(string methodName)
         {
             using StreamReader reader = new StreamReader(Request.Body);
             var body = reader.ReadToEndAsync().Result.Replace("\r\n", string.Empty);
-            Logger.LogInformation(body);
+            Logger.LogInformation($"{methodName}: {body}");
 
             return body;
         }
