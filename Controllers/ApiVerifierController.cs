@@ -145,7 +145,6 @@ namespace AA.DIDApi.Controllers
             try
             {
                 string body = GetRequestBody();
-                Logger.LogTrace(body);
                 Request.Headers.TryGetValue("api-key", out var apiKey);
                 if (_apiKey != apiKey)
                 {
@@ -189,6 +188,8 @@ namespace AA.DIDApi.Controllers
 
                     if (callback.code == "presentation_verified")
                     {
+                        Logger.LogInformation(JsonConvert.SerializeObject($"Claims: {callback.issuers[0].claims}"));
+
                         string displayName = "John Doe";
                         //  callback.issuers[0].claims.ContainsKey("displayName")
                         //  ? callback.issuers[0].claims["displayName"]
@@ -236,7 +237,6 @@ namespace AA.DIDApi.Controllers
             try
             {
                 string body = GetRequestBody();
-                Logger.LogTrace(body);
                 JObject b2cRequest = JObject.Parse(body);
                 string correlationId = b2cRequest["id"].ToString();
 
