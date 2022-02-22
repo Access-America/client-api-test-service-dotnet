@@ -102,8 +102,12 @@ namespace AA.DIDApi.Controllers
             }
 
             Logger.LogInformation(log.ToString());
-            return Redirect("http://localhost:5002/acuant/" + redirectLocation + ".html");
-            //return Redirect("https://upid-vcapi.azurewebsites.net/acuant/" + redirectLocation + ".html");
+
+            string redirectUrl = "https://upid-vcapi.azurewebsites.net";
+#if DEBUG
+            redirectUrl = "http://localhost:5002";
+#endif
+            return Redirect($"{redirectUrl}/acuant/{redirectLocation}.html");
         }
 
         #endregion Acuant
