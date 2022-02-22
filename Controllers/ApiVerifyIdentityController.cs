@@ -15,7 +15,7 @@ namespace AA.DIDApi.Controllers
     [ApiController]
     public class ApiVerifyIdentityController : ApiBaseVCController
     {
-        private readonly ILogger<ApiVerifyIdentityController> _logger;
+        private const string SessionKey = "AccountNameForUser";
 
         public ApiVerifyIdentityController(
             IConfiguration configuration,
@@ -32,19 +32,80 @@ namespace AA.DIDApi.Controllers
         [HttpGet]
         public IActionResult RedirectToAcuantWorkflow()
         {
-            var sessionGuid = HttpContext.Session.GetString("accountNameForUser");
-            if (string.IsNullOrEmpty(sessionGuid))
+            string man = HttpContext.Session.GetString(SessionKey);
+            if (string.IsNullOrEmpty(man))
             {
-                sessionGuid = Guid.NewGuid().ToString();
-                HttpContext.Session.SetString("accountNameForUser", sessionGuid);
+                man = Guid.NewGuid().ToString("N");
+                HttpContext.Session.SetString(SessionKey, man);
             }
-            
-            byte[] toEncodeAsBytes = Encoding.ASCII.GetBytes(sessionGuid.ToString());
-            var base64Encoded = Convert.ToBase64String(toEncodeAsBytes);
 
-            CacheObjectWithExpiration(base64Encoded, sessionGuid);
+            object data = new { tid = man };
+            string dataSerialized = Newtonsoft.Json.JsonConvert.SerializeObject(data); // "{\"man\":\"0ac8f945e5c94cce8d3b5862ce6b7986\"}"
+            byte[] toEncodeAsBytes = Encoding.ASCII.GetBytes(dataSerialized);
+            var base64Encoded = Convert.ToBase64String(toEncodeAsBytes); // "eyJ0aWQiOiIwYWM4Zjk0NWU1Yzk0Y2NlOGQzYjU4NjJjZTZiNzk4NiJ9"
+
+            CacheObjectWithExpiration(base64Encoded, man);
             
             return new RedirectResult($"https://ultrapass-1.acuantgo-prod.com/?data={base64Encoded}");
         }
+
+        #region Acuant
+
+        [HttpGet("acuant/accepted")]
+        public ActionResult PostAcuantAcceptedAsync([FromQuery] string urlParameter)
+        {
+            return BaseAcuantRedirectHandler("accepted", urlParameter: urlParameter);
+        }
+
+        [HttpGet("acuant/denied")]
+        public ActionResult PostAcuantDeniedAsync([FromQuery] string urlParameter)
+        {
+            return BaseAcuantRedirectHandler("denied", urlParameter: urlParameter);
+        }
+
+        [HttpGet("acuant/manual")]
+        public ActionResult GetAcuantManual([FromQuery] string urlParameter)
+        {
+            return BaseAcuantRedirectHandler(urlParameter, "manual");
+        }
+
+        [HttpGet("acuant/repeated")]
+        public ActionResult PostAcuantRepeatedAsync([FromQuery] string urlParameter)
+        {
+            return BaseAcuantRedirectHandler("repeated", urlParameter: urlParameter);
+        }
+
+        [HttpPost("acuant/webhook")]
+        public ActionResult PostAcuantWebhookAsync([FromQuery] string urlParameter)
+        {
+            string body = GetRequestBody("acuant/webhook");
+
+            // read response
+            // cross-reference with SessionKey
+
+            return BaseAcuantRedirectHandler("webhook", urlParameter, body);
+        }
+
+        private ActionResult BaseAcuantRedirectHandler(
+            string redirectLocation,
+            string urlParameter = null,
+            string body = null)
+        {
+            StringBuilder log = new StringBuilder($"{DateTime.UtcNow:o} -> {redirectLocation} -> {Request.Method} {Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString} ");
+            if (!string.IsNullOrEmpty(urlParameter))
+            {
+                log.Append($" UrlParameter: '{urlParameter}'");
+            }
+            if (!string.IsNullOrEmpty(body))
+            {
+                log.Append($" Body: '{body}'");
+            }
+
+            Logger.LogInformation(log.ToString());
+            return Redirect("http://localhost:5002/acuant/" + redirectLocation + ".html");
+            //return Redirect("https://upid-vcapi.azurewebsites.net/acuant/" + redirectLocation + ".html");
+        }
+
+        #endregion Acuant
     }
 }
