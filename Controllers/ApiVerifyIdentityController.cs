@@ -40,9 +40,9 @@ namespace AA.DIDApi.Controllers
             }
 
             //object data = new { man = man };
-            string dataSerialized = Newtonsoft.Json.JsonConvert.SerializeObject($"man:{man}"); // man:40b7b81827ef4d2e959167a24515d034
-            byte[] toEncodeAsBytes = Encoding.ASCII.GetBytes(dataSerialized);
-            var base64Encoded = Convert.ToBase64String(toEncodeAsBytes); // Im1hbjpiYmEzN2I1YmU0OWI0MWJlYTUyMmU0NzYyOGZjNzA1OSI=
+            //string dataSerialized = Newtonsoft.Json.JsonConvert.SerializeObject($"man:{man}"); // man:40b7b81827ef4d2e959167a24515d034
+            byte[] toEncodeAsBytes = Encoding.ASCII.GetBytes($"man:{man}"); // man:70c2947ee0ed482380f2d9bd3e149231
+            var base64Encoded = Convert.ToBase64String(toEncodeAsBytes);    // bWFuOjcwYzI5NDdlZTBlZDQ4MjM4MGYyZDliZDNlMTQ5MjMx
 
             CacheObjectWithExpiration(base64Encoded, man);
             
