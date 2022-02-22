@@ -39,10 +39,10 @@ namespace AA.DIDApi.Controllers
                 HttpContext.Session.SetString(SessionKey, man);
             }
 
-            object data = new { man = man };
-            string dataSerialized = Newtonsoft.Json.JsonConvert.SerializeObject(data); // { man: "40b7b81827ef4d2e959167a24515d034" }
+            //object data = new { man = man };
+            string dataSerialized = Newtonsoft.Json.JsonConvert.SerializeObject($"man:{man}"); // man:40b7b81827ef4d2e959167a24515d034
             byte[] toEncodeAsBytes = Encoding.ASCII.GetBytes(dataSerialized);
-            var base64Encoded = Convert.ToBase64String(toEncodeAsBytes); // eyJtYW4iOiI0MGI3YjgxODI3ZWY0ZDJlOTU5MTY3YTI0NTE1ZDAzNCJ9
+            var base64Encoded = Convert.ToBase64String(toEncodeAsBytes); // Im1hbjpiYmEzN2I1YmU0OWI0MWJlYTUyMmU0NzYyOGZjNzA1OSI=
 
             CacheObjectWithExpiration(base64Encoded, man);
             
