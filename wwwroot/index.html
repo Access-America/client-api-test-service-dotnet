@@ -9,7 +9,6 @@
     <meta name="author" content="Microsoft">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="favicon.png">
-
 </head>
 <body>
     <div id="wrap">
@@ -22,18 +21,22 @@
                 <i class="fas fa-user-check green icon-text-large margin-bottom-25"></i>
                 <div id="message"></div>
             </div>
+
+            <a href="api/verifyIdentity" style="margin-bottom: 20px;" type="button" id="idVerifyIdentification" class="button light-red-fill">Verify Your Identity</a>
+            <br />
+
             <button style="margin-bottom: 20px;" type="button" id="idIssue" class="button light-purple-fill">Issue Credential</button>
             <button style="margin-bottom: 20px;" type="button" id="idVerify" class="button light-purple-fill">Verify Credential</button>
             <script>
                 var idIssue = document.getElementById('idIssue');
-                var idVerify = document.getElementById('idVerify');
-
                 idIssue.addEventListener('click', () => {
                     window.location = "issuer.html";
-                })
+                });
+
+                var idVerify = document.getElementById('idVerify');
                 idVerify.addEventListener('click', () => {
                     window.location = "verifier.html";
-                })
+                });
 
                 fetch('api/issuer/echo')
                     .then(response => response.text())
@@ -50,7 +53,6 @@
                             document.title = data.credentialType + ' Verifiable Credentials';
                         }
                     })
-
             </script>
         </div>
         <footer>

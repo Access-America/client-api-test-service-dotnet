@@ -225,50 +225,6 @@ namespace AA.DIDApi.Controllers
 
         #endregion Endpoints
 
-        #region Acuant
-
-        [HttpPost("acuant/accepted")]
-        public ActionResult PostAcuantAcceptedAsync()
-        {
-            string body = GetRequestBody("acuant/accepted");
-            return BaseAcuantRedirectHandler(body, "accepted");
-        }
-
-        [HttpGet("acuant/manual")]
-        public ActionResult GetAcuantManual([FromQuery] string response)
-        {
-            return BaseAcuantRedirectHandler(response, "manual");
-        }
-
-        [HttpPost("acuant/denied")]
-        public ActionResult PostAcuantDeniedAsync()
-        {
-            string body = GetRequestBody("acuant/denied");
-            return BaseAcuantRedirectHandler(body, "denied");
-        }
-
-        [HttpPost("acuant/repeated")]
-        public ActionResult PostAcuantRepeatedAsync()
-        {
-            string body = GetRequestBody("acuant/repeated");
-            return BaseAcuantRedirectHandler(body, "repeated");
-        }
-
-        [HttpPost("acuant/webhook")]
-        public ActionResult PostAcuantWebhookAsync()
-        {
-            string body = GetRequestBody("acuant/webhook");
-            return BaseAcuantRedirectHandler(body, "webhook");
-        }
-
-        private ActionResult BaseAcuantRedirectHandler(string body, string redirectLocation)
-        {
-            Logger.LogInformation($"{DateTime.UtcNow:o} -> {redirectLocation} -> {Request.Method} {Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}: {body}");
-            return Redirect("https://upid-vcapi.azurewebsites.net/acuant/" + redirectLocation + ".html");
-        }
-
-        #endregion Acuant
-
         #region Helpers
 
         private string GetApiPath()
