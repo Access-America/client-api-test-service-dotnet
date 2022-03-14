@@ -7,7 +7,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace AA.DIDApi.Controllers
@@ -43,13 +42,12 @@ namespace AA.DIDApi.Controllers
 
             byte[] toEncodeAsBytes = Encoding.ASCII.GetBytes($"man:{man:N}");   // man:70c2947ee0ed482380f2d9bd3e149231
             var base64Encoded = Convert.ToBase64String(toEncodeAsBytes);        // bWFuOjcwYzI5NDdlZTBlZDQ4MjM4MGYyZDliZDNlMTQ5MjMx
-
             
             CacheObjectWithExpiration(man, base64Encoded);
             HttpContext.Session.SetString(SessionKeyEncoded, base64Encoded);
 
             return new RedirectResult($"https://pvlultratst.acuantgo-prod.com/?data={base64Encoded}");
-            //return new RedirectResult($"https://ultrapass-1.acuantgo-prod.com/?data={base64Encoded}");
+            //return new RedirectResult($"https://ultrapass-1.acuantgo-prod.com/?data={base64Encoded}"); // old form
         }
 
         #region Acuant
@@ -81,6 +79,7 @@ namespace AA.DIDApi.Controllers
         [HttpPost("acuant/webhook")]
         public ActionResult PostAcuantWebhookAsync([FromQuery] string urlParameter)
         {
+            const string acuantJwt = "h6k6o4em5p1j3r5r2h305u3e4p2e6k5v";
             string body = GetRequestBody("acuant/webhook");
 
             // read response

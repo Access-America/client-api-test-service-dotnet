@@ -124,11 +124,13 @@ namespace AA.DIDApi.Controllers
                     }
                 }
 
-                string jsonString = JsonConvert.SerializeObject(request, Formatting.None,
-                    new JsonSerializerSettings
-                    {
-                        NullValueHandling = NullValueHandling.Ignore
-                    });
+                var settings = new JsonSerializerSettings
+                {
+                    NullValueHandling = NullValueHandling.Ignore
+                };
+                string claimsString = JsonConvert.SerializeObject(request.issuance.claims, Formatting.None, settings);
+                Logger.LogTrace($"VC Client API Request Claims\n{claimsString}");
+                string jsonString = JsonConvert.SerializeObject(request, Formatting.None, settings);
                 Logger.LogTrace($"VC Client API Request\n{jsonString}");
 
                 string contents = "";
