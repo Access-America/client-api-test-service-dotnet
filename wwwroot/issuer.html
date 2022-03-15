@@ -35,9 +35,20 @@
                     <label id="label-entry2" for="entry2">Entry 2</label>
                     <input type="text" id="entry2" name="entry2" pattern="" placeholder="entry2" value="">
                 </div>
-                <p/>
+                <div class="entry-item" id="selfAssertedClaims3">
+                    <label id="label-entry3" for="entry3">Entry 3</label>
+                    <input type="text" id="entry3" name="entry3" pattern="" placeholder="entry3" value="">
+                </div>
+                <div class="entry-item" id="selfAssertedClaims4">
+                    <label id="label-entry4" for="entry4">Entry 4</label>
+                    <input type="text" id="entry4" name="entry4" pattern="" placeholder="entry4" value="">
+                </div>
+                <div class="entry-item" id="selfAssertedClaims5">
+                    <label id="label-entry5" for="entry4">Entry 5</label>
+                    <input type="text" id="entry5" name="entry5" pattern="" placeholder="entry5" value="">
+                </div>
+                <p />
             </div>
-
 
             <button type="button" id="sign-in" class="button">GET CREDENTIAL</button>
 
@@ -65,6 +76,7 @@
                     // add self asserted claims, if any
                     var queryStrings = "";
                     if (selfAssertedClaims) {
+                        console.log(123);
                         var idx;
                         var sep = "?";
                         for (idx = 0; idx < Object.keys(selfAssertedClaims).length; idx++) {
@@ -172,10 +184,10 @@
         </div>
         <footer>
             <p class="text-center text-gray tiny-text margin-top-75">
-                <strong>SDK Version:</strong>not using VC SDK</BR></BR>
-                <strong>API Version:</strong>private preview</BR></BR>
-                <strong>Minimum MS Authenticator version required:</strong></BR></BR>
-                Android: 6.2104.2348</BR>
+                <strong>SDK Version:</strong>not using VC SDK</br></br>
+                <strong>API Version:</strong>private preview</br></br>
+                <strong>Minimum MS Authenticator version required:</strong></br></br>
+                Android: 6.2104.2348</br>
                 IOS: 6.5.53
             </p>
         </footer>
