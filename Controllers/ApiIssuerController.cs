@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Stripe;
+using Stripe.Identity;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -36,10 +38,12 @@ namespace AA.DIDApi.Controllers
         public ActionResult Echo()
         {
             TraceHttpRequest();
+
             try
             {
+                var latestStripeVerifiedOutput = GetLatestStripeVerifiedOutput();
                 JObject manifest = GetIssuanceManifest();
-                Dictionary<string, string> claims = GetSelfAssertedClaims(manifest);
+                Dictionary<string, string> claims = GetSelfAssertedClaims(manifest, latestStripeVerifiedOutput);
                 var info = new
                 {
                     date = DateTime.Now.ToString(),
@@ -59,6 +63,19 @@ namespace AA.DIDApi.Controllers
             {
                 return ReturnErrorMessage(ex.Message);
             }
+        }
+
+        private StripeVerifiedOutput GetLatestStripeVerifiedOutput()
+        {
+            var options = new VerificationSessionListOptions
+            {
+                Limit = 1,
+                Expand = new List<string> { "data.verified_outputs" },
+            };
+            VerificationSessionService svc = new VerificationSessionService(StripeConfiguration.StripeClient);
+            StripeList<VerificationSession> verificationSessions = svc.List(options);
+
+            return new StripeVerifiedOutput(verificationSessions.Data[0]);
         }
 
         [HttpGet]
@@ -252,14 +269,36 @@ namespace AA.DIDApi.Controllers
             return JObject.Parse(contents);
         }
 
-        private Dictionary<string, string> GetSelfAssertedClaims(JObject manifest)
+        private Dictionary<string, string> GetSelfAssertedClaims(JObject manifest, StripeVerifiedOutput stripeVerifiedOutput = null)
         {
             Dictionary<string, string> claims = new Dictionary<string, string>();
             if (manifest["input"]["attestations"]["idTokens"][0]["id"].ToString() == "https://self-issued.me")
             {
                 foreach (var claim in manifest["input"]["attestations"]["idTokens"][0]["claims"])
                 {
-                    claims.Add(claim["claim"].ToString(), "");
+                    string propertyValue = null;
+                    if (stripeVerifiedOutput != null)
+                    {
+                        switch (claim["claim"].ToString())
+                        {
+                            case "$.given_name":
+                                propertyValue = stripeVerifiedOutput.FirstName;
+                                break;
+                            case "$.family_name":
+                                propertyValue = stripeVerifiedOutput.LastName;
+                                break;
+                            case "$.address":
+                                propertyValue = string.Join(",", stripeVerifiedOutput.AddressLine1, stripeVerifiedOutput.AddressLine2);
+                                break;
+                            case "$.state":
+                                propertyValue = stripeVerifiedOutput.State;
+                                break;
+                            case "$.zipcode":
+                                propertyValue = stripeVerifiedOutput.PostalCode;
+                                break;
+                        }
+                    }
+                    claims.Add(claim["claim"].ToString(), propertyValue);
                 }
             }
 

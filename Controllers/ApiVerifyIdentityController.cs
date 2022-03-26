@@ -6,8 +6,10 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
-using System.Text;
+using Newtonsoft.Json.Linq;
+using Stripe;
+using Stripe.Identity;
+using System.Collections.Generic;
 
 namespace AA.DIDApi.Controllers
 {
@@ -15,8 +17,8 @@ namespace AA.DIDApi.Controllers
     [ApiController]
     public class ApiVerifyIdentityController : ApiBaseVCController
     {
-        private const string SessionKey = "AccountNameForUser";
-        private const string SessionKeyEncoded = "AccountNameForUserEncoded";
+        //private const string SessionKey = "AccountNameForUser";
+        //private const string SessionKeyEncoded = "AccountNameForUserEncoded";
 
         public ApiVerifyIdentityController(
             IConfiguration configuration,
@@ -27,6 +29,103 @@ namespace AA.DIDApi.Controllers
         {
         }
 
+        #region Stripe
+
+        /// <summary>
+        /// Stripe implementation
+        /// </summary>
+        [HttpGet]
+        public IActionResult RedirectToAcuantWorkflow()
+        {
+            string redirectUrl = "https://upid-vcapi.azurewebsites.net";
+#if DEBUG
+            redirectUrl = "http://localhost:5002";
+#endif
+
+            var options = new VerificationSessionCreateOptions
+            {
+                Type = "document",
+                ReturnUrl = $"{redirectUrl}/issuer.html",
+                Options = new VerificationSessionOptionsOptions 
+                {
+                    Document = new VerificationSessionOptionsDocumentOptions
+                    {
+                        //RequireMatchingSelfie = true,
+                        RequireLiveCapture = true,
+                        AllowedTypes = new List<string>
+                        {
+                            "driving_license",
+                            //"passport",
+                            //"is_number"
+                        },
+                    }
+                }
+            };
+            var service = new VerificationSessionService();
+            var verificationSession = service.Create(options);
+            HttpContext.Session.SetString("upid-stripe-session", verificationSession.Id);
+
+            return new RedirectResult(verificationSession.Url);
+        }
+
+        [HttpPost("stripe/webhook")]
+        public IActionResult PostStripeWebhookAsync()
+        {
+            string body = GetRequestBody("stripe/webhook");
+            //JObject json = JObject.Parse(body);
+
+            VerificationSession response = VerificationSession.FromJson(body);
+                        
+            switch (response.Type)
+            {
+                case "identity.verification_session.verified":
+                    //var id = json["data"]["object"]["id"].Value<string>();
+                    //VerificationSessionService svc = new VerificationSessionService(StripeConfiguration.StripeClient);
+                    //VerificationSession userVerificationSession = 
+                    //    svc.Get(id, options: new VerificationSessionGetOptions
+                    //        {
+                    //            Expand = new List<string> { "verified_outputs" }
+                    //        });
+
+                    //var stripeVerifiedOutput = new StripeVerifiedOutput(userVerificationSession);
+                    //var stripeVerifiedOutputJson = Newtonsoft.Json.JsonConvert.SerializeObject(stripeVerifiedOutput);
+                    //HttpContext.Session.SetString("upid-stripe-verification-session", stripeVerifiedOutputJson);
+
+                    break;
+                    
+                case "identity.verification_session.requires_input":
+                    // TODO
+                    break;
+            }
+            
+            return Ok();
+        }
+
+        //private bool HttpPostStripe(string body, out HttpStatusCode statusCode, out string response)
+        //{
+        //    //response = null;
+        //    //var accessToken = GetAccessToken().Result;
+        //    //if (accessToken.Item1 == string.Empty)
+        //    //{
+        //    //    statusCode = HttpStatusCode.Unauthorized;
+        //    //    response = accessToken.Item2;
+        //    //    return false;
+        //    //}
+
+        //    using HttpClient client = new HttpClient();
+        //    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Item1);
+        //    using HttpResponseMessage res = client.PostAsync(_apiEndpoint, new StringContent(body, Encoding.UTF8, "application/json")).Result;
+        //    response = res.Content.ReadAsStringAsync().Result;
+
+        //    statusCode = res.StatusCode;
+        //    return res.IsSuccessStatusCode;
+        //}
+
+        #endregion Stripe
+
+        #region Acuant
+
+        /*
         /// <summary>
         /// https://go-help.acuant.com/en/articles/5746430-pass-field-information-to-a-journey-through-a-url
         /// </summary>
@@ -42,15 +141,13 @@ namespace AA.DIDApi.Controllers
 
             byte[] toEncodeAsBytes = Encoding.ASCII.GetBytes($"man:{man:N}");   // man:70c2947ee0ed482380f2d9bd3e149231
             var base64Encoded = Convert.ToBase64String(toEncodeAsBytes);        // bWFuOjcwYzI5NDdlZTBlZDQ4MjM4MGYyZDliZDNlMTQ5MjMx
-            
+
             CacheObjectWithExpiration(man, base64Encoded);
             HttpContext.Session.SetString(SessionKeyEncoded, base64Encoded);
 
             return new RedirectResult($"https://pvlultratst.acuantgo-prod.com/?data={base64Encoded}");
             //return new RedirectResult($"https://ultrapass-1.acuantgo-prod.com/?data={base64Encoded}"); // old form
         }
-
-        #region Acuant
 
         [HttpGet("acuant/accepted")]
         public ActionResult PostAcuantAcceptedAsync([FromQuery] string urlParameter)
@@ -111,6 +208,8 @@ namespace AA.DIDApi.Controllers
 #endif
             return Redirect($"{redirectUrl}/acuant/{redirectLocation}.html");
         }
+
+        */
 
         #endregion Acuant
     }
