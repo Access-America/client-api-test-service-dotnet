@@ -12,6 +12,7 @@ using Stripe;
 using Stripe.Identity;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 
@@ -36,14 +37,14 @@ namespace AA.DIDApi.Controllers
         #region Endpoints
 
         [HttpGet("echo")]
-        public ActionResult Echo()
+        public ActionResult Echo([FromQuery] string verificationSessionGuid)
         {
             TraceHttpRequest();
 
             try
             {
                 JObject manifest = GetIssuanceManifest();
-                Dictionary<string, string> claims = GetSelfAssertedClaims(manifest);
+                Dictionary<string, string> claims = GetSelfAssertedClaims(manifest, verificationSessionGuid);
                 var info = new
                 {
                     date = DateTime.Now.ToString(),
@@ -65,26 +66,32 @@ namespace AA.DIDApi.Controllers
             }
         }
 
-        private StripeVerifiedOutput GetLatestStripeVerifiedOutput()
+        private StripeVerifiedOutput GetLatestStripeVerifiedOutput(string verificationSessionGuid)
         {
-            var key = "stripe_data.verified_outputs";
-
-            if (string.IsNullOrEmpty(HttpContext.Session.GetString("stripe_data.verified_outputs")))
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString(STRIPE_DATA_VERIFIED_OUTPUT)))
             {
                 var options = new VerificationSessionListOptions
                 {
-                    Limit = 1,
+                    Limit = 25,
                     Expand = new List<string> { "data.verified_outputs" },
                 };
                 VerificationSessionService svc = new VerificationSessionService(StripeConfiguration.StripeClient);
                 StripeList<VerificationSession> verificationSessions = svc.List(options);
 
-                StripeVerifiedOutput stripeVerifiedOutput = new StripeVerifiedOutput(verificationSessions.Data[0]);
+                var verifiedStripeSession = verificationSessions.Data.SingleOrDefault(x => 
+                    x.Metadata != null && 
+                    x.Metadata.ContainsKey(STRIPE_VERIFICATION_SESSIONGUID) && 
+                    x.Metadata[STRIPE_VERIFICATION_SESSIONGUID] == verificationSessionGuid);
 
-                HttpContext.Session.SetString(key, JsonConvert.SerializeObject(stripeVerifiedOutput));
+                StripeVerifiedOutput stripeVerifiedOutput = null;
+                if (verifiedStripeSession != null)
+                {
+                    stripeVerifiedOutput = new StripeVerifiedOutput(verificationSessions.Data[0]);
+                    HttpContext.Session.SetString(STRIPE_DATA_VERIFIED_OUTPUT, JsonConvert.SerializeObject(stripeVerifiedOutput));
+                }
             }
 
-            return JsonConvert.DeserializeObject<StripeVerifiedOutput>(HttpContext.Session.GetString(key));
+            return JsonConvert.DeserializeObject<StripeVerifiedOutput>(HttpContext.Session.GetString(STRIPE_DATA_VERIFIED_OUTPUT));
         }
 
         [HttpGet]
@@ -278,34 +285,39 @@ namespace AA.DIDApi.Controllers
             return JObject.Parse(contents);
         }
 
-        private Dictionary<string, string> GetSelfAssertedClaims(JObject manifest)
+        private Dictionary<string, string> GetSelfAssertedClaims(JObject manifest, string verificationSessionGuid = null)
         {
             Dictionary<string, string> claims = new Dictionary<string, string>();
             if (manifest["input"]["attestations"]["idTokens"][0]["id"].ToString() == "https://self-issued.me")
             {
-                StripeVerifiedOutput stripeVerifiedOutput = GetLatestStripeVerifiedOutput();
+                StripeVerifiedOutput verifiedOutput = 
+                    //!string.IsNullOrEmpty(verificationSessionGuid) 
+                    //? 
+                    GetLatestStripeVerifiedOutput(verificationSessionGuid) 
+                    //: null
+                    ;
 
                 foreach (var claim in manifest["input"]["attestations"]["idTokens"][0]["claims"])
                 {
                     string propertyValue = null;
-                    if (stripeVerifiedOutput != null)
+                    if (verifiedOutput != null)
                     {
                         switch (claim["claim"].ToString())
                         {
                             case "$.given_name":
-                                propertyValue = stripeVerifiedOutput.FirstName;
+                                propertyValue = verifiedOutput.FirstName;
                                 break;
                             case "$.family_name":
-                                propertyValue = stripeVerifiedOutput.LastName;
+                                propertyValue = verifiedOutput.LastName;
                                 break;
                             case "$.address":
-                                propertyValue = string.Join(",", stripeVerifiedOutput.AddressLine1, stripeVerifiedOutput.AddressLine2);
+                                propertyValue = string.Join(",", verifiedOutput.AddressLine1, verifiedOutput.AddressLine2);
                                 break;
                             case "$.state":
-                                propertyValue = stripeVerifiedOutput.State;
+                                propertyValue = verifiedOutput.State;
                                 break;
                             case "$.zipcode":
-                                propertyValue = stripeVerifiedOutput.PostalCode;
+                                propertyValue = verifiedOutput.PostalCode;
                                 break;
                         }
                     }

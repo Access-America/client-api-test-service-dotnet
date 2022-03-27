@@ -153,36 +153,42 @@
 
                 var selfAssertedClaims;
                 var credentialType;
-                fetch('api/issuer/echo')
-                    .then(response => response.text())
-                    .catch(error => document.getElementById("message").innerHTML = error)
-                    .then(response => {
-                        if (response.length > 0) {
-                            var data = JSON.parse(response);
-                            credentialType = data.credentialType;
-                            document.getElementById('vcType').innerText = data.credentialType + " Issuance";
-                            document.getElementById('vcDescription').innerText = data.displayCard.description;
-                            document.body.style.backgroundColor = data.displayCard.backgroundColor;
-                            document.body.style.color = data.displayCard.textColor;
-                            document.getElementById('sign-in').style.backgroundColor = data.buttonColor;
-                            document.title = data.credentialType + ' Verifiable Credentials';
-                            // open up text fields for self asserted claims, if any
-                            selfAssertedClaims = null;
-                            if (data.selfAssertedClaims) {
-                                selfAssertedClaims = data.selfAssertedClaims;
-                                if (Object.keys(selfAssertedClaims).length > 0) {
-                                    document.getElementById('selfAssertedClaims').style.display = "block";
-                                    var idx = 1;
-                                    for (idx = 0; idx < Object.keys(selfAssertedClaims).length; idx++) {
-                                        var id = idx + 1;
-                                        document.getElementById('selfAssertedClaims' + id).style.display = "block";
-                                        document.getElementById('label-entry' + id).innerHTML = Object.keys(selfAssertedClaims)[idx];
-                                        document.getElementById('entry' + id).placeholder = selfAssertedClaims[Object.keys(selfAssertedClaims)[idx]];
+               
+                var searchParams = window.location.search;
+                var verificationSessionGuid = searchParams.slice('?verificationSessionGuid='.length, '?verificationSessionGuid='.length + 32);
+               
+                if (verificationSessionGuid != '' && verificationSessionGuid.length === 32) {
+                    fetch('api/issuer/echo' + window.location.search)
+                        .then(response => response.text())
+                        .catch(error => document.getElementById("message").innerHTML = error)
+                        .then(response => {
+                            if (response.length > 0) {
+                                var data = JSON.parse(response);
+                                credentialType = data.credentialType;
+                                document.getElementById('vcType').innerText = data.credentialType + " Issuance";
+                                document.getElementById('vcDescription').innerText = data.displayCard.description;
+                                document.body.style.backgroundColor = data.displayCard.backgroundColor;
+                                document.body.style.color = data.displayCard.textColor;
+                                document.getElementById('sign-in').style.backgroundColor = data.buttonColor;
+                                document.title = data.credentialType + ' Verifiable Credentials';
+                                // open up text fields for self asserted claims, if any
+                                selfAssertedClaims = null;
+                                if (data.selfAssertedClaims) {
+                                    selfAssertedClaims = data.selfAssertedClaims;
+                                    if (Object.keys(selfAssertedClaims).length > 0) {
+                                        document.getElementById('selfAssertedClaims').style.display = "block";
+                                        var idx = 1;
+                                        for (idx = 0; idx < Object.keys(selfAssertedClaims).length; idx++) {
+                                            var id = idx + 1;
+                                            document.getElementById('selfAssertedClaims' + id).style.display = "block";
+                                            document.getElementById('label-entry' + id).innerHTML = Object.keys(selfAssertedClaims)[idx];
+                                            document.getElementById('entry' + id).placeholder = selfAssertedClaims[Object.keys(selfAssertedClaims)[idx]];
+                                        }
                                     }
                                 }
                             }
-                        }
                     })
+                }
 
             </script>
         </div>

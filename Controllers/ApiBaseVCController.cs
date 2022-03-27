@@ -29,6 +29,9 @@ namespace AA.DIDApi.Controllers
         private string _authority;
         public string _apiKey;
 
+        public const string STRIPE_DATA_VERIFIED_OUTPUT = "stripe_data.verified_outputs";
+        public const string STRIPE_VERIFICATION_SESSIONGUID= "verificationSessionGuid";
+
         public ApiBaseVCController(
             IConfiguration configuration,
             IOptions<AppSettingsModel> appSettings,

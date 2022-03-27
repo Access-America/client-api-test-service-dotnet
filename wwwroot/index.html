@@ -25,8 +25,9 @@
             <a href="api/verifyIdentity" style="margin-bottom: 20px;" type="button" id="idVerifyIdentification" class="button light-red-fill">Verify Your Identity</a>
             <br />
 
-            <button style="margin-bottom: 20px;" type="button" id="idIssue" class="button light-purple-fill">Issue Credential</button>
+            <!--<button style="margin-bottom: 20px;" type="button" id="idIssue" class="button light-grey-fill" disabled>Issue Credential</button>-->
             <button style="margin-bottom: 20px;" type="button" id="idVerify" class="button light-purple-fill">Verify Credential</button>
+           
             <script>
                 var idIssue = document.getElementById('idIssue');
                 idIssue.addEventListener('click', () => {
@@ -38,21 +39,21 @@
                     window.location = "verifier.html";
                 });
 
-                fetch('api/issuer/echo')
-                    .then(response => response.text())
-                    .catch(error => document.getElementById("message").innerHTML = error)
-                    .then(response => {
-                        if (response.length > 0) {
-                            var data = JSON.parse(response);
-                            document.getElementById('vcType').innerText = data.credentialType + " Verifiable Credentials";
-                            document.getElementById('vcDescription').innerText = data.displayCard.description;
-                            document.body.style.backgroundColor = data.displayCard.backgroundColor;
-                            document.body.style.color = data.displayCard.textColor;
-                            document.getElementById('idIssue').style.backgroundColor = data.buttonColor;
-                            document.getElementById('idVerify').style.backgroundColor = data.buttonColor;
-                            document.title = data.credentialType + ' Verifiable Credentials';
-                        }
-                    })
+                //fetch('api/issuer/echo')
+                //    .then(response => response.text())
+                //    .catch(error => document.getElementById("message").innerHTML = error)
+                //    .then(response => {
+                //        if (response.length > 0) {
+                //            var data = JSON.parse(response);
+                //            document.getElementById('vcType').innerText = data.credentialType + " Verifiable Credentials";
+                //            document.getElementById('vcDescription').innerText = data.displayCard.description;
+                //            document.body.style.backgroundColor = data.displayCard.backgroundColor;
+                //            document.body.style.color = data.displayCard.textColor;
+                //            document.getElementById('idIssue').style.backgroundColor = data.buttonColor;
+                //            document.getElementById('idVerify').style.backgroundColor = data.buttonColor;
+                //            document.title = data.credentialType + ' Verifiable Credentials';
+                //        }
+                //    })
             </script>
         </div>
         <footer>

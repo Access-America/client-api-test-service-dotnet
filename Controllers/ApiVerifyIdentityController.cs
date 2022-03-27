@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe.Identity;
+using System;
 using System.Collections.Generic;
 
 namespace AA.DIDApi.Controllers
@@ -39,11 +40,11 @@ namespace AA.DIDApi.Controllers
 #if DEBUG
             redirectUrl = "http://localhost:5002";
 #endif
-
-            var options = new VerificationSessionCreateOptions
+            string verificationSessionGuid = Guid.NewGuid().ToString("N");
+            var createOptions = new VerificationSessionCreateOptions
             {
                 Type = "document",
-                ReturnUrl = $"{redirectUrl}/issuer.html",
+                ReturnUrl = $"{redirectUrl}/issuer.html?verificationSessionGuid={verificationSessionGuid}",
                 Options = new VerificationSessionOptionsOptions 
                 {
                     Document = new VerificationSessionOptionsDocumentOptions
@@ -57,11 +58,17 @@ namespace AA.DIDApi.Controllers
                             //"passport",
                             //"is_number"
                         },
-                    }
+                    }                    
+                },
+                Metadata = new Dictionary<string, string>
+                {
+                    { STRIPE_VERIFICATION_SESSIONGUID, verificationSessionGuid.ToString() }
                 }
             };
             var service = new VerificationSessionService();
-            var verificationSession = service.Create(options);
+            var verificationSession = service.Create(createOptions);
+
+            
             HttpContext.Session.SetString("upid-stripe-session", verificationSession.Id);
 
             return new RedirectResult(verificationSession.Url);
