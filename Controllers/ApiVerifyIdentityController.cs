@@ -35,7 +35,7 @@ namespace AA.DIDApi.Controllers
         /// Stripe implementation
         /// </summary>
         [HttpGet]
-        public IActionResult RedirectToAcuantWorkflow()
+        public IActionResult RedirectToStripeWorkflow()
         {
             string redirectUrl = "https://upid-vcapi.azurewebsites.net";
 #if DEBUG

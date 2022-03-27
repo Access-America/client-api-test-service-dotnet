@@ -120,11 +120,19 @@ namespace AA.DIDApi.Controllers
 
             using HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Item1);
-            using HttpResponseMessage res = client.PostAsync(_apiEndpoint, new StringContent(body, Encoding.UTF8, "application/json")).Result;
-            response = res.Content.ReadAsStringAsync().Result;
-
-            statusCode = res.StatusCode;
-            return res.IsSuccessStatusCode;
+            try
+            {
+                using HttpResponseMessage res = client.PostAsync(_apiEndpoint, new StringContent(body, Encoding.UTF8, "application/json")).Result;
+                response = res.Content.ReadAsStringAsync().Result;
+                statusCode = res.StatusCode;
+                return res.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                response = ex.Message;
+                statusCode = HttpStatusCode.InternalServerError;
+                return false;
+            }
         }
 
         protected bool HttpGet(string url, out HttpStatusCode statusCode, out string response)
