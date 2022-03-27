@@ -81,7 +81,13 @@
                         for (idx = 0; idx < Object.keys(selfAssertedClaims).length; idx++) {
                             var id = idx + 1;
                             //queryStrings += sep + Object.keys(selfAssertedClaims)[idx] + "=" + document.getElementById('entry' + id).value;
-                            queryStrings += sep + Object.keys(selfAssertedClaims)[idx] + "=" + document.getElementById('entry' + id).placeholder;
+                            //console.log(document.getElementById('entry' + id).value);
+                            //console.log(document.getElementById('entry' + id).placeholder);
+                            var claimValue = document.getElementById('entry' + id).value == ''
+                                ? document.getElementById('entry' + id).placeholder
+                                : document.getElementById('entry' + id).value;
+                            console.log(claimValue);
+                            queryStrings += sep + Object.keys(selfAssertedClaims)[idx] + "=" + claimValue;
                             sep = "&";
                         }
                     }
