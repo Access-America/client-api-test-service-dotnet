@@ -118,6 +118,7 @@ namespace AA.DIDApi.Controllers
                 return false;
             }
 
+            bool isSuccessStatusCode = false;
             using HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Item1);
             try
@@ -125,14 +126,21 @@ namespace AA.DIDApi.Controllers
                 using HttpResponseMessage res = client.PostAsync(_apiEndpoint, new StringContent(body, Encoding.UTF8, "application/json")).Result;
                 response = res.Content.ReadAsStringAsync().Result;
                 statusCode = res.StatusCode;
-                return res.IsSuccessStatusCode;
+
+                isSuccessStatusCode = res.IsSuccessStatusCode;
+                if (!isSuccessStatusCode)
+                {
+                    Logger.LogWarning("POST request not Successful: {0}:{1}", statusCode, response);
+                }
             }
             catch (Exception ex)
             {
                 response = ex.Message;
                 statusCode = HttpStatusCode.InternalServerError;
-                return false;
+                Logger.LogError("POST request unsuccessful: {0}:{1}", statusCode, response);
             }
+
+            return isSuccessStatusCode;
         }
 
         protected bool HttpGet(string url, out HttpStatusCode statusCode, out string response)
