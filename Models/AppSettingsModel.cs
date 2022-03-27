@@ -39,5 +39,9 @@
         public string Purpose { get; set; }
 
         public int IssuancePinCodeLength { get; set; }
+
+        public string StripeKeyTestMode { get; set; }
+
+        public string StripeKeyProductionMode { get; set; }
     }
 }

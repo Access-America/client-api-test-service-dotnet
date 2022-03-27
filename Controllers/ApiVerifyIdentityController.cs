@@ -6,8 +6,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
-using Stripe;
 using Stripe.Identity;
 using System.Collections.Generic;
 
@@ -50,6 +48,7 @@ namespace AA.DIDApi.Controllers
                 {
                     Document = new VerificationSessionOptionsDocumentOptions
                     {
+                        // TODO: uncomment this when we want to validate documents on Stripe
                         //RequireMatchingSelfie = true,
                         RequireLiveCapture = true,
                         AllowedTypes = new List<string>
@@ -100,26 +99,6 @@ namespace AA.DIDApi.Controllers
             
             return Ok();
         }
-
-        //private bool HttpPostStripe(string body, out HttpStatusCode statusCode, out string response)
-        //{
-        //    //response = null;
-        //    //var accessToken = GetAccessToken().Result;
-        //    //if (accessToken.Item1 == string.Empty)
-        //    //{
-        //    //    statusCode = HttpStatusCode.Unauthorized;
-        //    //    response = accessToken.Item2;
-        //    //    return false;
-        //    //}
-
-        //    using HttpClient client = new HttpClient();
-        //    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Item1);
-        //    using HttpResponseMessage res = client.PostAsync(_apiEndpoint, new StringContent(body, Encoding.UTF8, "application/json")).Result;
-        //    response = res.Content.ReadAsStringAsync().Result;
-
-        //    statusCode = res.StatusCode;
-        //    return res.IsSuccessStatusCode;
-        //}
 
         #endregion Stripe
 

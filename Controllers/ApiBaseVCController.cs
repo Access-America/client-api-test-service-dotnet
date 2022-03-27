@@ -48,11 +48,11 @@ namespace AA.DIDApi.Controllers
 
             //_apiKey = System.Environment.GetEnvironmentVariable("INMEM-API-KEY");
 
-            // TEST:
-            StripeConfiguration.ApiKey = "sk_test_51KdMQHDEkM46zq0JFGA292fAcddC0usfsxn0X5SrXRmY701Er0eu5FilfliL16np8wcJlRhz8Wkc539ElWRJREOC00hBSdr26q";
-
-            // LIVE
-            //StripeConfiguration.ApiKey = "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";
+            StripeConfiguration.ApiKey = AppSettings.StripeKeyTestMode;
+#if !DEBUG
+            // TODO: uncomment this when we want to validate documents on Stripe
+            //StripeConfiguration.ApiKey = AppSettings.StripeKeyProductionMode;
+#endif
         }
 
         protected string GetRequestHostName()
