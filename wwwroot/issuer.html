@@ -76,12 +76,12 @@
                     // add self asserted claims, if any
                     var queryStrings = "";
                     if (selfAssertedClaims) {
-                        console.log(123);
                         var idx;
                         var sep = "?";
                         for (idx = 0; idx < Object.keys(selfAssertedClaims).length; idx++) {
                             var id = idx + 1;
-                            queryStrings += sep + Object.keys(selfAssertedClaims)[idx] + "=" + document.getElementById('entry' + id).value;
+                            //queryStrings += sep + Object.keys(selfAssertedClaims)[idx] + "=" + document.getElementById('entry' + id).value;
+                            queryStrings += sep + Object.keys(selfAssertedClaims)[idx] + "=" + document.getElementById('entry' + id).placeholder;
                             sep = "&";
                         }
                     }
@@ -90,7 +90,6 @@
                         .catch(error => document.getElementById("message").innerHTML = error)
                         .then(response => {
                             if (response.length > 0) {
-                                console.log(response)
                                 respIssuanceReq = JSON.parse(response);
                                 if (respIssuanceReq.error_description) {
                                     document.getElementById("message").innerHTML = respIssuanceReq.error_description;
@@ -154,7 +153,6 @@
                     .then(response => {
                         if (response.length > 0) {
                             var data = JSON.parse(response);
-                            //data1 = data;
                             credentialType = data.credentialType;
                             document.getElementById('vcType').innerText = data.credentialType + " Issuance";
                             document.getElementById('vcDescription').innerText = data.displayCard.description;

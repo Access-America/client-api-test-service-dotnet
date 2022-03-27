@@ -1,5 +1,6 @@
 ﻿using AA.DIDApi.Models;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -41,9 +42,8 @@ namespace AA.DIDApi.Controllers
 
             try
             {
-                var latestStripeVerifiedOutput = GetLatestStripeVerifiedOutput();
                 JObject manifest = GetIssuanceManifest();
-                Dictionary<string, string> claims = GetSelfAssertedClaims(manifest, latestStripeVerifiedOutput);
+                Dictionary<string, string> claims = GetSelfAssertedClaims(manifest);
                 var info = new
                 {
                     date = DateTime.Now.ToString(),
@@ -67,15 +67,24 @@ namespace AA.DIDApi.Controllers
 
         private StripeVerifiedOutput GetLatestStripeVerifiedOutput()
         {
-            var options = new VerificationSessionListOptions
-            {
-                Limit = 1,
-                Expand = new List<string> { "data.verified_outputs" },
-            };
-            VerificationSessionService svc = new VerificationSessionService(StripeConfiguration.StripeClient);
-            StripeList<VerificationSession> verificationSessions = svc.List(options);
+            var key = "stripe_data.verified_outputs";
 
-            return new StripeVerifiedOutput(verificationSessions.Data[0]);
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("stripe_data.verified_outputs")))
+            {
+                var options = new VerificationSessionListOptions
+                {
+                    Limit = 1,
+                    Expand = new List<string> { "data.verified_outputs" },
+                };
+                VerificationSessionService svc = new VerificationSessionService(StripeConfiguration.StripeClient);
+                StripeList<VerificationSession> verificationSessions = svc.List(options);
+
+                StripeVerifiedOutput stripeVerifiedOutput = new StripeVerifiedOutput(verificationSessions.Data[0]);
+
+                HttpContext.Session.SetString(key, JsonConvert.SerializeObject(stripeVerifiedOutput));
+            }
+
+            return JsonConvert.DeserializeObject<StripeVerifiedOutput>(HttpContext.Session.GetString(key));
         }
 
         [HttpGet]
@@ -269,11 +278,13 @@ namespace AA.DIDApi.Controllers
             return JObject.Parse(contents);
         }
 
-        private Dictionary<string, string> GetSelfAssertedClaims(JObject manifest, StripeVerifiedOutput stripeVerifiedOutput = null)
+        private Dictionary<string, string> GetSelfAssertedClaims(JObject manifest)
         {
             Dictionary<string, string> claims = new Dictionary<string, string>();
             if (manifest["input"]["attestations"]["idTokens"][0]["id"].ToString() == "https://self-issued.me")
             {
+                StripeVerifiedOutput stripeVerifiedOutput = GetLatestStripeVerifiedOutput();
+
                 foreach (var claim in manifest["input"]["attestations"]["idTokens"][0]["claims"])
                 {
                     string propertyValue = null;
