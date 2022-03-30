@@ -49,7 +49,7 @@ namespace AA.DIDApi.Controllers
             _apiEndpoint = string.Format(AppSettings.ApiEndpoint, AppSettings.TenantId);
             _authority = string.Format(AppSettings.Authority, AppSettings.TenantId);
 
-            //_apiKey = System.Environment.GetEnvironmentVariable("INMEM-API-KEY");
+            _apiKey = System.Environment.GetEnvironmentVariable("INMEM-API-KEY");
 
             StripeConfiguration.ApiKey = AppSettings.StripeKeyTestMode;
 #if !DEBUG
