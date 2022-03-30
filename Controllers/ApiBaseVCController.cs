@@ -54,7 +54,7 @@ namespace AA.DIDApi.Controllers
             StripeConfiguration.ApiKey = AppSettings.StripeKeyTestMode;
 #if !DEBUG
             // TODO: uncomment this when we want to validate documents on Stripe
-            //StripeConfiguration.ApiKey = AppSettings.StripeKeyProductionMode;
+            StripeConfiguration.ApiKey = AppSettings.StripeKeyProductionMode;
 #endif
         }
 
