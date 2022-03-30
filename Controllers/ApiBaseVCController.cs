@@ -65,7 +65,8 @@ namespace AA.DIDApi.Controllers
 
             return !string.IsNullOrEmpty(originalHost)
                 ? $"{scheme}://{originalHost}"
-                : $"{scheme}://{Request.Host}";
+                : $"{scheme}://upid-vcapi.azurewebsites.net";
+                //: $"{scheme}://{Request.Host}";
         }
 
         // return 400 error-message
@@ -126,7 +127,10 @@ namespace AA.DIDApi.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Item1);
             try
             {
-                using HttpResponseMessage res = client.PostAsync(_apiEndpoint, new StringContent(body, Encoding.UTF8, "application/json")).Result;
+                Logger.LogInformation(string.Format("Calling MSFT Verifiable Credentials: POST {0}, body: {1}", _apiEndpoint, body));
+                StringContent content = new StringContent(body, Encoding.UTF8, "application/json");
+
+                using HttpResponseMessage res = client.PostAsync(_apiEndpoint, content).Result;
                 response = res.Content.ReadAsStringAsync().Result;
                 statusCode = res.StatusCode;
 
