@@ -199,6 +199,7 @@
                                 document.title = data.credentialType + ' Verifiable Credentials';
                                 // open up text fields for self asserted claims, if any
                                 selfAssertedClaims = null;
+                                selfAssertedClaimsHaveValue = false;
                                 if (data.selfAssertedClaims) {
                                     selfAssertedClaims = data.selfAssertedClaims;
                                     if (Object.keys(selfAssertedClaims).length > 0) {
@@ -208,9 +209,17 @@
                                             var id = idx + 1;
                                             document.getElementById('selfAssertedClaims' + id).style.display = "block";
                                             document.getElementById('label-entry' + id).innerHTML = Object.keys(selfAssertedClaims)[idx];
-                                            document.getElementById('entry' + id).placeholder = selfAssertedClaims[Object.keys(selfAssertedClaims)[idx]];
+                                            var currentValue = selfAssertedClaims[Object.keys(selfAssertedClaims)[idx]];
+                                            document.getElementById('entry' + id).placeholder = currentValue;
+                                            if (currentValue != null && selfAssertedClaimsHaveValue === false) {
+                                                selfAssertedClaimsHaveValue = true;
+                                            }
                                         }
                                     }
+                                }
+
+                                if (selfAssertedClaimsHaveValue === false) {
+                                    document.getElementById('vcDescription').innerText = 'Your Identification has yet to be finalized. Please try again later'
                                 }
                             }
                     })

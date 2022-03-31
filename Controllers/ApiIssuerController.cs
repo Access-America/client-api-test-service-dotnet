@@ -84,10 +84,14 @@ namespace AA.DIDApi.Controllers
                     x.Metadata[STRIPE_VERIFICATION_SESSIONGUID] == verificationSessionGuid);
 
                 StripeVerifiedOutput stripeVerifiedOutput = null;
-                if (verifiedStripeSession != null)
+                if (verifiedStripeSession?.VerifiedOutputs != null)
                 {
-                    stripeVerifiedOutput = new StripeVerifiedOutput(verificationSessions.Data[0]);
+                    stripeVerifiedOutput = new StripeVerifiedOutput(verifiedStripeSession);
                     HttpContext.Session.SetString(STRIPE_DATA_VERIFIED_OUTPUT, JsonConvert.SerializeObject(stripeVerifiedOutput));
+                }
+                else
+                {
+                    return null;
                 }
             }
 
@@ -290,12 +294,7 @@ namespace AA.DIDApi.Controllers
             Dictionary<string, string> claims = new Dictionary<string, string>();
             if (manifest["input"]["attestations"]["idTokens"][0]["id"].ToString() == "https://self-issued.me")
             {
-                StripeVerifiedOutput verifiedOutput = 
-                    //!string.IsNullOrEmpty(verificationSessionGuid) 
-                    //? 
-                    GetLatestStripeVerifiedOutput(verificationSessionGuid) 
-                    //: null
-                    ;
+                StripeVerifiedOutput verifiedOutput = GetLatestStripeVerifiedOutput(verificationSessionGuid);
 
                 foreach (var claim in manifest["input"]["attestations"]["idTokens"][0]["claims"])
                 {
@@ -311,7 +310,7 @@ namespace AA.DIDApi.Controllers
                                 propertyValue = verifiedOutput.LastName;
                                 break;
                             case "$.address":
-                                propertyValue = string.Join(",", verifiedOutput.AddressLine1, verifiedOutput.AddressLine2);
+                                propertyValue = string.Join(",", verifiedOutput.AddressLine1, verifiedOutput.AddressLine2).TrimEnd(',');
                                 break;
                             case "$.state":
                                 propertyValue = verifiedOutput.State;
@@ -321,7 +320,7 @@ namespace AA.DIDApi.Controllers
                                 break;
                         }
                     }
-                    claims.Add(claim["claim"].ToString(), propertyValue);
+                    claims.Add(claim["claim"].ToString(), propertyValue ?? null);
                 }
             }
 

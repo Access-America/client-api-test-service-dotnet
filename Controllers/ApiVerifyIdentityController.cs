@@ -50,12 +50,12 @@ namespace AA.DIDApi.Controllers
                     Document = new VerificationSessionOptionsDocumentOptions
                     {
                         // TODO: uncomment this when we want to validate documents on Stripe
-                        //RequireMatchingSelfie = true,
+                        RequireMatchingSelfie = true,
                         RequireLiveCapture = true,
                         AllowedTypes = new List<string>
                         {
                             "driving_license",
-                            //"passport",
+                            "passport",
                             //"is_number"
                         },
                     }                    
